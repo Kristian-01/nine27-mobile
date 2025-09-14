@@ -1,0 +1,20 @@
+{
+    "name": "kristian/nine27",
+    "description": "my mobile",
+    "type": "project",
+    "version": "dev-main",
+    "autoload": {
+        "psr-4": {
+            "Kristian\\Nine27\\": "src/"
+        }
+    },
+    "authors": [
+        {
+            "name": "Kristian",
+            "email": "avenido.kristian0@gmail.com"
+        }
+    ],
+    "require": {
+        "laravel/sanctum": "^4.2"
+    }
+}
