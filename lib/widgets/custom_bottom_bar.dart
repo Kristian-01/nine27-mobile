@@ -53,6 +53,12 @@ class CustomBottomBar extends StatelessWidget {
       route: '/product-categories',
     ),
     BottomNavItem(
+      icon: Icons.person_outline,
+      activeIcon: Icons.person,
+      label: 'Profile',
+      route: '/user-profile',
+    ),
+    BottomNavItem(
       icon: Icons.shopping_cart_outlined,
       activeIcon: Icons.shopping_cart,
       label: 'Cart',
@@ -135,7 +141,8 @@ class CustomBottomBar extends StatelessWidget {
           if (onTap != null) {
             onTap!(index);
           } else {
-            Navigator.pushNamed(context, item.route);
+            if (isSelected) return;
+            Navigator.pushReplacementNamed(context, item.route);
           }
         },
         borderRadius: BorderRadius.circular(12),

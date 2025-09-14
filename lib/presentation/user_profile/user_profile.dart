@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:sizer/sizer.dart';
 
 import '../../core/app_export.dart';
+import '../../widgets/custom_bottom_bar.dart';
 import './widgets/account_settings_widget.dart';
 import './widgets/address_management_widget.dart';
 import './widgets/health_profile_widget.dart';
@@ -109,6 +110,10 @@ class _UserProfileState extends State<UserProfile>
             ),
           ],
         ),
+      ),
+      bottomNavigationBar: const CustomBottomBar(
+        currentIndex: 2,
+        cartItemCount: 3,
       ),
     );
   }
@@ -507,9 +512,10 @@ class _UserProfileState extends State<UserProfile>
           ElevatedButton(
             onPressed: () {
               Navigator.pop(context);
+              ScaffoldMessenger.of(context).clearSnackBars();
               Navigator.pushNamedAndRemoveUntil(
                 context,
-                '/home-screen',
+                AppRoutes.login,
                 (route) => false,
               );
             },

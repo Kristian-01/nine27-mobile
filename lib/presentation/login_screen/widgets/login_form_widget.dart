@@ -74,6 +74,7 @@ class _LoginFormWidgetState extends State<LoginFormWidget> {
   }
 
   void _handleLogin() {
+    if (widget.isLoading) return;
     if (_formKey.currentState?.validate() ?? false) {
       widget.onLogin(
         _emailController.text.trim(),
@@ -124,7 +125,7 @@ class _LoginFormWidgetState extends State<LoginFormWidget> {
             enabled: !widget.isLoading,
             onChanged: _onPasswordChanged,
             validator: _validatePassword,
-            onFieldSubmitted: (_) => _handleLogin(),
+            onFieldSubmitted: (_) {},
             decoration: InputDecoration(
               labelText: 'Password',
               hintText: 'Enter your password',

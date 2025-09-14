@@ -156,7 +156,7 @@ ActionButtonsSection(
         ),
       ),
       bottomNavigationBar: const CustomBottomBar(
-        currentIndex: 3,
+        currentIndex: 4,
         cartItemCount: 3,
       ),
     );

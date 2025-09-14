@@ -8,6 +8,7 @@ import '../presentation/product_categories/product_categories.dart';
 import '../presentation/user_profile/user_profile.dart';
 import '../presentation/login_screen/login_screen.dart';
 import '../presentation/signup_screen/signup_screen.dart';
+import '../presentation/products/products_screen.dart';
 
 class AppRoutes {
   // ✅ Correct type names
@@ -17,6 +18,7 @@ class AppRoutes {
   static const String searchResults = '/search-results';
   static const String shoppingCart = '/shopping-cart';
   static const String home = '/home-screen';
+  static const String products = '/products';
   static const String checkout = '/checkout';
   static const String orderTracking = '/order-tracking';
   static const String productCategories = '/product-categories';
@@ -27,6 +29,7 @@ class AppRoutes {
   login: (context) => const LoginScreen(),
   signup: (context) => const SignupScreen(),
   home: (context) => const HomeScreen(),
+  products: (context) => const ProductsScreen(),
   searchResults: (context) => const SearchResults(),
   shoppingCart: (context) => const ShoppingCart(),
   checkout: (context) => const Checkout(),

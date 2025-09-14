@@ -4,6 +4,8 @@ import 'package:sizer/sizer.dart';
 
 import '../../core/app_export.dart';
 import './widgets/signup_form.dart';
+import '../../core/auth_service.dart';
+import 'package:dio/dio.dart';
 
 class SignupScreen extends StatefulWidget {
   const SignupScreen({Key? key}) : super(key: key);
@@ -24,22 +26,9 @@ class _SignupScreenState extends State<SignupScreen> {
   bool _isConfirmPasswordVisible = false;
   bool _isTermsAccepted = false;
   bool _isLoading = false;
+  final AuthService _authService = AuthService();
 
-  // Mock user data for validation
-  final List<Map<String, dynamic>> _existingUsers = [
-    {
-      "email": "john.doe@example.com",
-      "fullName": "John Doe",
-    },
-    {
-      "email": "jane.smith@example.com",
-      "fullName": "Jane Smith",
-    },
-    {
-      "email": "admin@authflow.com",
-      "fullName": "Admin User",
-    },
-  ];
+  // Remove mock users; rely on backend uniqueness
 
   @override
   void dispose() {
@@ -66,28 +55,28 @@ class _SignupScreenState extends State<SignupScreen> {
     setState(() => _isLoading = true);
 
     try {
-      // Simulate network delay
-      await Future.delayed(const Duration(seconds: 2));
+      final res = await _authService.register(
+        name: _fullNameController.text.trim(),
+        email: _emailController.text.trim(),
+        password: _passwordController.text,
+        passwordConfirmation: _confirmPasswordController.text,
+      );
 
-      // Check if email already exists
-      final emailExists = (_existingUsers as List).any((dynamic user) =>
-          (user as Map<String, dynamic>)['email']?.toString().toLowerCase() ==
-          _emailController.text.trim().toLowerCase());
-
-      if (emailExists) {
-        _showErrorMessage('An account with this email already exists');
-        return;
+      if (res.statusCode == 201) {
+        _showSuccessMessage('Account created successfully!');
+        await Future.delayed(const Duration(milliseconds: 800));
+        if (mounted) {
+          Navigator.pushNamedAndRemoveUntil(context, AppRoutes.home, (route) => false);
+        }
+      } else {
+        _showErrorMessage('Registration failed.');
       }
-
-      // Simulate successful registration
-      _showSuccessMessage('Account created successfully! Welcome to AuthFlow!');
-
-      // Navigate to login screen after success
-      await Future.delayed(const Duration(seconds: 1));
-      if (mounted) {
-        Navigator.pushReplacementNamed(context, '/login-screen');
-      }
-    } catch (e) {
+    } on DioException catch (e) {
+      final msg = e.response?.data is Map && (e.response?.data['message'] is String)
+          ? e.response?.data['message'] as String
+          : 'Registration failed. Please try again.';
+      _showErrorMessage(msg);
+    } catch (_) {
       _showErrorMessage('Registration failed. Please try again.');
     } finally {
       if (mounted) {
@@ -179,9 +168,16 @@ class _SignupScreenState extends State<SignupScreen> {
             size: 24,
           ),
         ),
-        title: Text(
-          'Create Account',
-          style: AppTheme.lightTheme.textTheme.titleLarge,
+        title: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Image.asset('assets/images/logo.png', width: 24, height: 24),
+            const SizedBox(width: 8),
+            Text(
+              'Create Account',
+              style: AppTheme.lightTheme.textTheme.titleLarge,
+            ),
+          ],
         ),
         centerTitle: true,
       ),
@@ -195,19 +191,11 @@ class _SignupScreenState extends State<SignupScreen> {
               Center(
                 child: Column(
                   children: [
-                    Container(
+                    Image.asset(
+                      'assets/images/logo.png',
                       width: 20.w,
                       height: 20.w,
-                      decoration: BoxDecoration(
-                        color: AppTheme.lightTheme.colorScheme.primary
-                            .withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(10.w),
-                      ),
-                      child: CustomIconWidget(
-                        iconName: 'person_add',
-                        color: AppTheme.lightTheme.colorScheme.primary,
-                        size: 10.w,
-                      ),
+                      fit: BoxFit.cover,
                     ),
                     SizedBox(height: 3.h),
                     Text(

@@ -32,25 +32,14 @@ class _HomeScreenState extends State<HomeScreen> {
         centerTitle: false,
         showCartAction: true,
         cartItemCount: 3,
-        onCartPressed: () => Navigator.pushNamed(context, '/shopping-cart'),
-        actions: [
-          IconButton(
-            icon: CustomIconWidget(
-              iconName: 'notifications_outlined',
-              color: AppTheme.lightTheme.colorScheme.onSurface,
-              size: 24,
-            ),
-            onPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('No new notifications'),
-                  duration: Duration(seconds: 2),
-                ),
-              );
-            },
-            tooltip: 'Notifications',
-          ),
-        ],
+        titleWidget: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Image.asset('assets/images/logo.png', width: 24, height: 24),
+            const SizedBox(width: 8),
+            const Text('Nine27-Pharmacy'),
+          ],
+        ),
       ),
       body: RefreshIndicator(
         key: _refreshIndicatorKey,
@@ -257,9 +246,12 @@ class _HomeScreenState extends State<HomeScreen> {
         Navigator.pushNamed(context, '/product-categories');
         break;
       case 2:
-        Navigator.pushNamed(context, '/shopping-cart');
+        Navigator.pushNamed(context, '/user-profile');
         break;
       case 3:
+        Navigator.pushNamed(context, '/shopping-cart');
+        break;
+      case 4:
         Navigator.pushNamed(context, '/order-tracking');
         break;
     }
