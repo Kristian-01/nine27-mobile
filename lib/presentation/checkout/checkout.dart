@@ -47,7 +47,7 @@ class _CheckoutState extends State<Checkout> {
     {
       "id": 1,
       "name": "Paracetamol 500mg Tablets",
-      "price": "\$12.99",
+      "price": "₱12.99",
       "image":
           "https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=400&h=400&fit=crop",
       "quantity": 2,
@@ -57,7 +57,7 @@ class _CheckoutState extends State<Checkout> {
     {
       "id": 2,
       "name": "Amoxicillin 250mg Capsules",
-      "price": "\$24.50",
+      "price": "₱24.50",
       "image":
           "https://images.unsplash.com/photo-1559757148-5c350d0d3c56?w=400&h=400&fit=crop",
       "quantity": 1,
@@ -67,7 +67,7 @@ class _CheckoutState extends State<Checkout> {
     {
       "id": 3,
       "name": "Vitamin D3 1000 IU Tablets",
-      "price": "\$18.75",
+      "price": "₱18.75",
       "image":
           "https://images.unsplash.com/photo-1550572017-edd951b55104?w=400&h=400&fit=crop",
       "quantity": 1,
@@ -77,7 +77,7 @@ class _CheckoutState extends State<Checkout> {
     {
       "id": 4,
       "name": "Lisinopril 10mg Tablets",
-      "price": "\$32.00",
+      "price": "₱32.00",
       "image":
           "https://images.unsplash.com/photo-1587854692152-cbe660dbde88?w=400&h=400&fit=crop",
       "quantity": 1,
@@ -389,7 +389,7 @@ class _CheckoutState extends State<Checkout> {
                           ),
                     ),
                     Text(
-                      '\$${_calculateTotal().toStringAsFixed(2)}',
+                      '₱${_calculateTotal().toStringAsFixed(2)}',
                       style: Theme.of(context).textTheme.titleLarge?.copyWith(
                             fontWeight: FontWeight.w700,
                             color: AppTheme.lightTheme.primaryColor,
@@ -442,7 +442,7 @@ class _CheckoutState extends State<Checkout> {
   double _calculateTotal() {
     final subtotal = _cartItems.fold(0.0, (sum, item) {
       final price =
-          double.tryParse(item['price'].toString().replaceAll('\$', '')) ?? 0.0;
+          double.tryParse(item['price'].toString().replaceAll('₱', '')) ?? 0.0;
       final quantity = item['quantity'] as int? ?? 1;
       return sum + (price * quantity);
     });

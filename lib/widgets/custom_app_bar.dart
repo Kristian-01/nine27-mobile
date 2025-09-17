@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 /// Implements Clinical Minimalism design with trust-building elements
 class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
   final String title;
+  final Widget? titleWidget;
   final List<Widget>? actions;
   final Widget? leading;
   final bool showBackButton;
@@ -22,6 +23,7 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
   const CustomAppBar({
     super.key,
     required this.title,
+    this.titleWidget,
     this.actions,
     this.leading,
     this.showBackButton = true,
@@ -56,6 +58,7 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
       foregroundColor: foregroundColor ?? colorScheme.onSurface,
       elevation: elevation,
       surfaceTintColor: Colors.transparent,
+      automaticallyImplyLeading: showBackButton,
       leading: leading ??
           (showBackButton && Navigator.canPop(context)
               ? IconButton(

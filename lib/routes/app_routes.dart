@@ -8,11 +8,15 @@ import '../presentation/product_categories/product_categories.dart';
 import '../presentation/user_profile/user_profile.dart';
 import '../presentation/login_screen/login_screen.dart';
 import '../presentation/signup_screen/signup_screen.dart';
+import '../presentation/forgot_password_screen/forgot_password_screen.dart'; 
+
 
 class AppRoutes {
   // ✅ Correct type names
+  
   static const String login = '/login';
   static const String signup = '/signup';
+  static const String forgotPassword = '/forgot-password'; // Add this line
   static const String initial = login; // Start at login, change to home if needed
   static const String searchResults = '/search-results';
   static const String shoppingCart = '/shopping-cart';
@@ -24,8 +28,10 @@ class AppRoutes {
 
   // ✅ Route mapping
   static Map<String, WidgetBuilder> routes = {
+   
   login: (context) => const LoginScreen(),
   signup: (context) => const SignupScreen(),
+  forgotPassword: (context) => const ForgotPasswordScreen(), 
   home: (context) => const HomeScreen(),
   searchResults: (context) => const SearchResults(),
   shoppingCart: (context) => const ShoppingCart(),

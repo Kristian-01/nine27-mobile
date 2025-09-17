@@ -6,6 +6,7 @@ import '../../core/app_export.dart';
 import '../../widgets/custom_app_bar.dart';
 import '../../widgets/custom_bottom_bar.dart';
 import './widgets/category_card_widget.dart';
+import '../../core/product_service.dart';
 import './widgets/filter_bottom_sheet_widget.dart';
 import './widgets/search_bar_widget.dart';
 
@@ -18,6 +19,7 @@ class ProductCategories extends StatefulWidget {
 
 class _ProductCategoriesState extends State<ProductCategories>
     with TickerProviderStateMixin {
+  final ProductService _productService = ProductService();
   late TextEditingController _searchController;
   late ScrollController _scrollController;
 
@@ -30,99 +32,9 @@ class _ProductCategoriesState extends State<ProductCategories>
     'sortBy': 'name',
   };
 
-  // Mock data for pharmaceutical categories
-  final List<Map<String, dynamic>> _categories = [
-    {
-      "id": 1,
-      "name": "Over-the-Counter",
-      "icon": "local_pharmacy",
-      "color": AppTheme.lightTheme.colorScheme.primary,
-      "productCount": 245,
-      "subcategories": [
-        {"name": "Pain Relief", "count": 45},
-        {"name": "Cold & Flu", "count": 38},
-        {"name": "Digestive Health", "count": 32},
-        {"name": "Allergy Relief", "count": 28},
-        {"name": "Sleep Aids", "count": 22},
-        {"name": "Cough & Throat", "count": 35},
-        {"name": "Skin Care", "count": 45},
-      ],
-    },
-    {
-      "id": 2,
-      "name": "Prescription",
-      "icon": "receipt_long",
-      "color": AppTheme.lightTheme.colorScheme.error,
-      "productCount": 189,
-      "subcategories": [
-        {"name": "Antibiotics", "count": 42},
-        {"name": "Blood Pressure", "count": 35},
-        {"name": "Diabetes", "count": 28},
-        {"name": "Heart Medications", "count": 25},
-        {"name": "Mental Health", "count": 31},
-        {"name": "Hormones", "count": 28},
-      ],
-    },
-    {
-      "id": 3,
-      "name": "Vitamins & Supplements",
-      "icon": "eco",
-      "color": AppTheme.lightTheme.colorScheme.tertiary,
-      "productCount": 312,
-      "subcategories": [
-        {"name": "Multivitamins", "count": 58},
-        {"name": "Vitamin D", "count": 45},
-        {"name": "Omega-3", "count": 38},
-        {"name": "Probiotics", "count": 42},
-        {"name": "Protein Supplements", "count": 35},
-        {"name": "Herbal Supplements", "count": 48},
-        {"name": "Minerals", "count": 46},
-      ],
-    },
-    {
-      "id": 4,
-      "name": "First Aid",
-      "icon": "medical_services",
-      "color": AppTheme.lightTheme.colorScheme.error,
-      "productCount": 87,
-      "subcategories": [
-        {"name": "Bandages & Gauze", "count": 25},
-        {"name": "Antiseptics", "count": 18},
-        {"name": "Wound Care", "count": 22},
-        {"name": "Emergency Supplies", "count": 12},
-        {"name": "Thermometers", "count": 10},
-      ],
-    },
-    {
-      "id": 5,
-      "name": "Personal Care",
-      "icon": "self_care",
-      "color": AppTheme.lightTheme.colorScheme.secondary,
-      "productCount": 156,
-      "subcategories": [
-        {"name": "Oral Care", "count": 42},
-        {"name": "Hair Care", "count": 38},
-        {"name": "Body Care", "count": 35},
-        {"name": "Feminine Care", "count": 25},
-        {"name": "Baby Care", "count": 16},
-      ],
-    },
-    {
-      "id": 6,
-      "name": "Medical Devices",
-      "icon": "monitor_heart",
-      "color": AppTheme.lightTheme.colorScheme.primary,
-      "productCount": 94,
-      "subcategories": [
-        {"name": "Blood Pressure Monitors", "count": 15},
-        {"name": "Glucose Meters", "count": 12},
-        {"name": "Nebulizers", "count": 8},
-        {"name": "Mobility Aids", "count": 25},
-        {"name": "Diagnostic Tools", "count": 18},
-        {"name": "Home Testing", "count": 16},
-      ],
-    },
-  ];
+  // Initially empty; will be loaded form API
+  List<Map<String, dynamic>> _categories = [];
+  bool _loading = true;
 
   // Search suggestions for medicine-specific autocomplete
   final List<String> _searchSuggestions = [
@@ -158,7 +70,37 @@ class _ProductCategoriesState extends State<ProductCategories>
     super.initState();
     _searchController = TextEditingController();
     _scrollController = ScrollController();
+    _loadCategories();
   }
+
+  Future<void> _loadCategories() async{
+    try{
+      final res = await _productService.fetchCategories();
+      final list = (res.data['data'] as List<dynamic>).cast<Map<String, dynamic>>();
+      // Map API categories to UI model
+      setState(() {
+        _categories = list
+        .map((c) => {
+          'id': c['id'],
+          'name': c['name'],
+          'slug':c['slug'],
+          'icon': 'local_pharmacy',
+          'color': AppTheme.lightTheme.colorScheme.primary,
+          'productCount': c['product_count']?? 0,
+          'subcategories':<Map<String, dynamic>>[],
+        })
+        .toList();
+      _loading = false;
+      });
+    }catch (e) {
+      setState(() {
+        _loading = false;
+      });
+    }
+
+
+  }
+
 
   @override
   void dispose() {
@@ -288,7 +230,7 @@ class _ProductCategoriesState extends State<ProductCategories>
             // Categories list
             Expanded(
               child: filteredCategories.isEmpty
-                  ? _buildEmptyState(context)
+                  ? (_loading ? const Center(child: CircularProgressIndicator()) :_buildEmptyState(context))
                   : ListView.builder(
                       controller: _scrollController,
                       padding: EdgeInsets.only(bottom: 2.h),

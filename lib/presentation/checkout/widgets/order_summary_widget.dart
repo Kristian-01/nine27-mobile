@@ -15,8 +15,11 @@ class OrderSummaryWidget extends StatelessWidget {
 
   double get subtotal {
     return cartItems.fold(0.0, (sum, item) {
-      final price =
-          double.tryParse(item['price'].toString().replaceAll('\$', '')) ?? 0.0;
+      final price = double.tryParse(
+        item['price']
+        .toString()
+        .replaceAll(RegExp(r'^[^0-9.]+'), '')) ?? 
+        0.0;
       final quantity = item['quantity'] as int? ?? 1;
       return sum + (price * quantity);
     });
@@ -83,7 +86,9 @@ class OrderSummaryWidget extends StatelessWidget {
               itemBuilder: (context, index) {
                 final item = cartItems[index];
                 final price = double.tryParse(
-                        item['price'].toString().replaceAll('\$', '')) ??
+                        item['price']
+                        .toString()
+                        .replaceAll(RegExp(r'^[^0-9.]+'), '')) ??
                     0.0;
                 final quantity = item['quantity'] as int? ?? 1;
 
@@ -150,7 +155,7 @@ class OrderSummaryWidget extends StatelessWidget {
                       ),
                     ),
                     Text(
-                      '\$${(price * quantity).toStringAsFixed(2)}',
+                      '₱${(price * quantity).toStringAsFixed(2)}',
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                             fontWeight: FontWeight.w600,
                           ),
@@ -166,23 +171,23 @@ class OrderSummaryWidget extends StatelessWidget {
             child: Column(
               children: [
                 _buildSummaryRow(
-                    context, 'Subtotal', '\$${subtotal.toStringAsFixed(2)}'),
+                    context, 'Subtotal', '₱${subtotal.toStringAsFixed(2)}'),
                 SizedBox(height: 1.h),
                 _buildSummaryRow(
-                    context, 'Tax (8%)', '\$${tax.toStringAsFixed(2)}'),
+                    context, 'Tax (8%)', '₱${tax.toStringAsFixed(2)}'),
                 SizedBox(height: 1.h),
                 _buildSummaryRow(
                   context,
                   'Delivery Fee',
                   deliveryFee == 0
                       ? 'FREE'
-                      : '\$${deliveryFee.toStringAsFixed(2)}',
+                      : '₱${deliveryFee.toStringAsFixed(2)}',
                   isDeliveryFree: deliveryFee == 0,
                 ),
                 if (deliveryFee == 0) ...[
                   SizedBox(height: 0.5.h),
                   Text(
-                    'Free delivery on orders over \$50',
+                    'Free delivery on orders over ₱50',
                     style: Theme.of(context).textTheme.labelSmall?.copyWith(
                           color: AppTheme.successLight,
                           fontWeight: FontWeight.w500,
@@ -200,7 +205,7 @@ class OrderSummaryWidget extends StatelessWidget {
                   child: _buildSummaryRow(
                     context,
                     'Total',
-                    '\$${total.toStringAsFixed(2)}',
+                    '₱${total.toStringAsFixed(2)}',
                     isTotal: true,
                   ),
                 ),

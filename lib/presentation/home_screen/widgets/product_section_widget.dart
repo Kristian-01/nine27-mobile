@@ -239,8 +239,8 @@ class ProductSectionWidget extends StatelessWidget {
             "id": 1,
             "name": "Paracetamol 500mg",
             "manufacturer": "HealthCorp",
-            "price": "\$12.99",
-            "originalPrice": "\$15.99",
+            "price": "₱12.99",
+            "originalPrice": "₱15.99",
             "discount": 20,
             "image":
                 "https://images.pexels.com/photos/3683056/pexels-photo-3683056.jpeg?auto=compress&cs=tinysrgb&w=400",
@@ -251,7 +251,7 @@ class ProductSectionWidget extends StatelessWidget {
             "id": 2,
             "name": "Vitamin D3 1000 IU",
             "manufacturer": "NutriLife",
-            "price": "\$24.99",
+            "price": "₱24.99",
             "image":
                 "https://images.pexels.com/photos/3786126/pexels-photo-3786126.jpeg?auto=compress&cs=tinysrgb&w=400",
             "prescriptionRequired": false,
@@ -261,8 +261,8 @@ class ProductSectionWidget extends StatelessWidget {
             "id": 3,
             "name": "Ibuprofen 400mg",
             "manufacturer": "MediCore",
-            "price": "\$18.50",
-            "originalPrice": "\$22.00",
+            "price": "₱18.50",
+            "originalPrice": "₱22.00",
             "discount": 15,
             "image":
                 "https://images.pexels.com/photos/4386466/pexels-photo-4386466.jpeg?auto=compress&cs=tinysrgb&w=400",
@@ -276,7 +276,7 @@ class ProductSectionWidget extends StatelessWidget {
             "id": 4,
             "name": "Omega-3 Fish Oil",
             "manufacturer": "HealthPlus",
-            "price": "\$32.99",
+            "price": "₱32.99",
             "image":
                 "https://images.pexels.com/photos/3683056/pexels-photo-3683056.jpeg?auto=compress&cs=tinysrgb&w=400",
             "prescriptionRequired": false,
@@ -286,8 +286,8 @@ class ProductSectionWidget extends StatelessWidget {
             "id": 5,
             "name": "Multivitamin Complex",
             "manufacturer": "VitaMax",
-            "price": "\$28.75",
-            "originalPrice": "\$35.00",
+            "price": "₱28.75",
+            "originalPrice": "₱35.00",
             "discount": 18,
             "image":
                 "https://images.pexels.com/photos/3786126/pexels-photo-3786126.jpeg?auto=compress&cs=tinysrgb&w=400",
@@ -298,7 +298,7 @@ class ProductSectionWidget extends StatelessWidget {
             "id": 6,
             "name": "Calcium + Magnesium",
             "manufacturer": "BoneHealth",
-            "price": "\$21.99",
+            "price": "₱21.99",
             "image":
                 "https://images.pexels.com/photos/4386466/pexels-photo-4386466.jpeg?auto=compress&cs=tinysrgb&w=400",
             "prescriptionRequired": false,
@@ -311,8 +311,8 @@ class ProductSectionWidget extends StatelessWidget {
             "id": 7,
             "name": "Cough Syrup 100ml",
             "manufacturer": "CoughCare",
-            "price": "\$8.99",
-            "originalPrice": "\$14.99",
+            "price": "₱8.99",
+            "originalPrice": "₱14.99",
             "discount": 40,
             "image":
                 "https://images.pexels.com/photos/3683056/pexels-photo-3683056.jpeg?auto=compress&cs=tinysrgb&w=400",
@@ -323,8 +323,8 @@ class ProductSectionWidget extends StatelessWidget {
             "id": 8,
             "name": "Antiseptic Cream",
             "manufacturer": "SkinCare",
-            "price": "\$6.50",
-            "originalPrice": "\$10.00",
+            "price": "₱6.50",
+            "originalPrice": "₱10.00",
             "discount": 35,
             "image":
                 "https://images.pexels.com/photos/3786126/pexels-photo-3786126.jpeg?auto=compress&cs=tinysrgb&w=400",
@@ -335,8 +335,8 @@ class ProductSectionWidget extends StatelessWidget {
             "id": 9,
             "name": "Digital Thermometer",
             "manufacturer": "TechMed",
-            "price": "\$15.99",
-            "originalPrice": "\$25.99",
+            "price": "₱15.99",
+            "originalPrice": "₱25.99",
             "discount": 38,
             "image":
                 "https://images.pexels.com/photos/4386466/pexels-photo-4386466.jpeg?auto=compress&cs=tinysrgb&w=400",

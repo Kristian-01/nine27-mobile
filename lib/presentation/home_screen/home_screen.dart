@@ -23,35 +23,25 @@ class _HomeScreenState extends State<HomeScreen> {
       GlobalKey<RefreshIndicatorState>();
 
   @override
-  Widget build(BuildContext context) {
+    Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppTheme.lightTheme.scaffoldBackgroundColor,
       appBar: CustomAppBar(
+        
         title: 'Nine27-Pharmacy',
         showBackButton: false,
         centerTitle: false,
         showCartAction: true,
         cartItemCount: 3,
-        onCartPressed: () => Navigator.pushNamed(context, '/shopping-cart'),
-        actions: [
-          IconButton(
-            icon: CustomIconWidget(
-              iconName: 'notifications_outlined',
-              color: AppTheme.lightTheme.colorScheme.onSurface,
-              size: 24,
-            ),
-            onPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('No new notifications'),
-                  duration: Duration(seconds: 2),
-                ),
-              );
-            },
-            tooltip: 'Notifications',
-          ),
-        ],
-      ),
+        titleWidget: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+        Image.asset('assets/images/logo.png', width: 24, height: 24),
+         const SizedBox(width: 8),
+         const Text('Nine27-Pharmacy'),
+    ],
+  ),
+),
       body: RefreshIndicator(
         key: _refreshIndicatorKey,
         onRefresh: _handleRefresh,
@@ -249,19 +239,22 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _handleBottomNavigation(int index) {
-    switch (index) {
-      case 0:
-        // Already on Home screen
-        break;
-      case 1:
-        Navigator.pushNamed(context, '/product-categories');
-        break;
-      case 2:
-        Navigator.pushNamed(context, '/shopping-cart');
-        break;
-      case 3:
-        Navigator.pushNamed(context, '/order-tracking');
-        break;
-    }
+  switch (index) {
+    case 0:
+      // Already on Home screen
+      break;
+    case 1:
+      Navigator.pushNamed(context, '/product-categories');
+      break;
+    case 2:
+      Navigator.pushNamed(context, '/user-profile');
+      break;
+    case 3:
+      Navigator.pushNamed(context, '/shopping-cart');
+      break;
+    case 4:
+      Navigator.pushNamed(context, '/order-tracking');
+      break;
   }
+}
 }

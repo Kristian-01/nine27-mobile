@@ -6,6 +6,9 @@ import '../../core/app_export.dart';
 import './widgets/app_logo_widget.dart';
 import './widgets/login_form_widget.dart';
 import './widgets/signup_prompt_widget.dart';
+import '../../core/auth_service.dart';
+import 'package:dio/dio.dart';
+
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({Key? key}) : super(key: key);
@@ -13,66 +16,76 @@ class LoginScreen extends StatefulWidget {
   @override
   State<LoginScreen> createState() => _LoginScreenState();
 }
-
 class _LoginScreenState extends State<LoginScreen> {
   bool _isLoading = false;
-
-  // Mock credentials for testing
-  final Map<String, String> _mockCredentials = {
-    'admin@nine27pharmacy.com': 'admin123',
-    'user@nine27pharmacy.com': 'user123',
-    'demo@nine27pharmacy.com': 'demo123',
-  };
+  final AuthService _authService = AuthService();
+  bool _isSubmittingLogin = false;
+  bool _loginCompleted = false;
 
   Future<void> _handleLogin(
       String email, String password, bool rememberMe) async {
     // Dismiss keyboard
     FocusScope.of(context).unfocus();
 
+    if (_isSubmittingLogin) return;
+    _isSubmittingLogin = true;
+    _loginCompleted = false;
+
     setState(() {
       _isLoading = true;
     });
 
     try {
-      // Simulate network delay
-      await Future.delayed(const Duration(seconds: 2));
+      final res = await _authService.login(email: email.trim(), password: password);
 
-      // Check mock credentials
-      if (_mockCredentials.containsKey(email.toLowerCase()) &&
-          _mockCredentials[email.toLowerCase()] == password) {
-        // Provide haptic feedback for success
+        if (res.statusCode == 200){
         HapticFeedback.lightImpact();
 
-        // Show success message
         if (mounted) {
+          ScaffoldMessenger.of(context).clearSnackBars();
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: const Text('Login successful! Welcome back.'),
               backgroundColor: AppTheme.lightTheme.colorScheme.primary,
               duration: const Duration(seconds: 2),
             ),
-          );
+          );   
 
-          // Navigate to main app (simulate)
           await Future.delayed(const Duration(milliseconds: 500));
           if (mounted) {
-            Navigator.pushReplacementNamed(context, '/splash-screen');
+            ScaffoldMessenger.of(context).clearSnackBars();
+            Navigator.pushNamedAndRemoveUntil(context, AppRoutes.home, (route) => false);
           }
         }
+        _loginCompleted = true;
+        return;
       } else {
         // Show error for invalid credentials
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content:
-                  const Text('Invalid email or password. Please try again.'),
+              content: const Text('Invalid email or password. Please try again.'),
               backgroundColor: AppTheme.lightTheme.colorScheme.error,
               duration: const Duration(seconds: 3),
             ),
           );
         }
       }
+    }on DioException catch (e) {
+      if (_loginCompleted) return;
+      final msg = e.response?.data is Map && (e.response?.data['message'] is String)
+      ? e.response?.data['message'] as String
+      : 'Login failed. Please check your connection and try again.';
+      if (mounted){
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(msg),
+            backgroundColor: AppTheme.lightTheme.colorScheme.error,
+            duration: const Duration(seconds: 3),
+          ),);
+      }
     } catch (e) {
+      if(_loginCompleted) return;
       // Handle network or other errors
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -85,12 +98,19 @@ class _LoginScreenState extends State<LoginScreen> {
         );
       }
     } finally {
+      _isSubmittingLogin = false;
       if (mounted) {
         setState(() {
           _isLoading = false;
         });
       }
     }
+  }
+
+  // Add this new method to handle forgot password navigation
+  void _handleForgotPassword() {
+    if (_isLoading) return;
+    Navigator.pushNamed(context, AppRoutes.forgotPassword);
   }
 
   void _handleBackNavigation() {
@@ -170,9 +190,10 @@ class _LoginScreenState extends State<LoginScreen> {
 
                       SizedBox(height: 4.h),
 
-                      // Login Form
+                      // Login Form - Updated to pass the forgot password callback
                       LoginFormWidget(
                         onLogin: _handleLogin,
+                        onForgotPassword: _handleForgotPassword, // Add this line
                         isLoading: _isLoading,
                       ),
 

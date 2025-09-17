@@ -5,11 +5,13 @@ import '../../../core/app_export.dart';
 
 class LoginFormWidget extends StatefulWidget {
   final Function(String email, String password, bool rememberMe) onLogin;
+  final VoidCallback? onForgotPassword; // Add this parameter
   final bool isLoading;
 
   const LoginFormWidget({
     Key? key,
     required this.onLogin,
+    this.onForgotPassword, // Add this parameter
     this.isLoading = false,
   }) : super(key: key);
 
@@ -74,6 +76,7 @@ class _LoginFormWidgetState extends State<LoginFormWidget> {
   }
 
   void _handleLogin() {
+    if (widget.isLoading) return; 
     if (_formKey.currentState?.validate() ?? false) {
       widget.onLogin(
         _emailController.text.trim(),
@@ -124,7 +127,7 @@ class _LoginFormWidgetState extends State<LoginFormWidget> {
             enabled: !widget.isLoading,
             onChanged: _onPasswordChanged,
             validator: _validatePassword,
-            onFieldSubmitted: (_) => _handleLogin(),
+            onFieldSubmitted: (_) {},
             decoration: InputDecoration(
               labelText: 'Password',
               hintText: 'Enter your password',
@@ -161,17 +164,7 @@ class _LoginFormWidgetState extends State<LoginFormWidget> {
           Align(
             alignment: Alignment.centerRight,
             child: TextButton(
-              onPressed: widget.isLoading
-                  ? null
-                  : () {
-                      // Navigate to forgot password screen
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Forgot password feature coming soon'),
-                          duration: Duration(seconds: 2),
-                        ),
-                      );
-                    },
+              onPressed: widget.isLoading ? null : widget.onForgotPassword,
               child: Text(
                 'Forgot Password?',
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(

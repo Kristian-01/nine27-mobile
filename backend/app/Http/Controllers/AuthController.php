@@ -5,8 +5,9 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\User;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Auth;
 
-class AuthController extends Controller
+Class AuthController extends Controller
 {
     // Register a new user
     public function register(Request $request)
@@ -33,21 +34,26 @@ class AuthController extends Controller
 
     // Login existing user
     public function login(Request $request)
-    {
-        $request->validate([
-            'email' => 'required|email',
-            'password' => 'required'
-        ]);
+	{
+		$request->validate([
+			'email' => 'required|email',
+			'password' => 'required',
+			'remember' => 'sometimes|boolean',
+		]);
 
-        $user = User::where('email', $request->email)->first();
+		$credentials = $request->only('email', 'password');
+		$remember = (bool) $request->boolean('remember');
 
-        if (!$user || !Hash::check($request->password, $user->password)) {
-            return response()->json(['message' => 'Invalid credentials'], 401);
-        }
+		if (!$Auth::attempt($credentials, $remember)) {
+			return response()->json(['message' => 'Invalid credentials'], 401);
+		}
 
-        return response()->json([
-            'message' => 'Login successful',
-            'user' => $user
-        ], 200);
-    }
+		$request->session()->regenerate();
+
+		return response()->json([
+			'message' => 'Login successful', 
+			'user' => Auth::user(),
+			'remember' => $remember,
+		], 200);
+	}
 }

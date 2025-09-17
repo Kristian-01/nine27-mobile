@@ -34,7 +34,7 @@ class _OrderTrackingState extends State<OrderTracking> {
       "image":
           "https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?fm=jpg&q=60&w=3000&ixlib=rb-4.0.3",
       "quantity": 2,
-      "price": "\$12.99",
+      "price": "₱12.99",
       "isPrescription": false,
     },
     {
@@ -43,7 +43,7 @@ class _OrderTrackingState extends State<OrderTracking> {
       "image":
           "https://images.unsplash.com/photo-1559757148-5c350d0d3c56?fm=jpg&q=60&w=3000&ixlib=rb-4.0.3",
       "quantity": 1,
-      "price": "\$24.50",
+      "price": "₱24.50",
       "isPrescription": true,
     },
     {
@@ -52,17 +52,17 @@ class _OrderTrackingState extends State<OrderTracking> {
       "image":
           "https://images.unsplash.com/photo-1550572017-edd951aa8f72?fm=jpg&q=60&w=3000&ixlib=rb-4.0.3",
       "quantity": 1,
-      "price": "\$18.75",
+      "price": "₱18.75",
       "isPrescription": false,
     },
   ];
 
   // Mock data for order summary
   final Map<String, dynamic> orderSummary = {
-    "subtotal": "\$56.24",
-    "deliveryFee": "\$5.99",
-    "tax": "\$4.97",
-    "total": "\$67.20",
+    "subtotal": "₱56.24",
+    "deliveryFee": "₱5.99",
+    "tax": "₱4.97",
+    "total": "₱67.20",
   };
 
   // Mock data for delivery information
@@ -89,19 +89,19 @@ class _OrderTrackingState extends State<OrderTracking> {
       "orderId": "MED2024089",
       "date": "Dec 28, 2024",
       "status": "Delivered",
-      "total": "\$45.30",
+      "total": "₱45.30",
     },
     {
       "orderId": "MED2024076",
       "date": "Dec 15, 2024",
       "status": "Delivered",
-      "total": "\$32.80",
+      "total": "₱32.80",
     },
     {
       "orderId": "MED2024063",
       "date": "Nov 30, 2024",
       "status": "Cancelled",
-      "total": "\$28.50",
+      "total": "₱28.50",
     },
   ];
 
@@ -156,7 +156,7 @@ ActionButtonsSection(
         ),
       ),
       bottomNavigationBar: const CustomBottomBar(
-        currentIndex: 3,
+        currentIndex: 4,
         cartItemCount: 3,
       ),
     );

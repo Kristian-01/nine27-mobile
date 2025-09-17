@@ -30,7 +30,7 @@ class _PromotionalBannerWidgetState extends State<PromotionalBannerWidget> {
     {
       "id": 2,
       "title": "Free Delivery",
-      "subtitle": "On orders above \$50 - Limited time offer",
+      "subtitle": "On orders above ₱50 - Limited time offer",
       "image":
           "https://images.pexels.com/photos/4386466/pexels-photo-4386466.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1",
       "backgroundColor": AppTheme.successLight,
