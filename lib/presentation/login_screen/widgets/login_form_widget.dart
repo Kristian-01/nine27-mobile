@@ -76,7 +76,11 @@ class _LoginFormWidgetState extends State<LoginFormWidget> {
   }
 
   void _handleLogin() {
+<<<<<<< HEAD
     if (widget.isLoading) return; 
+=======
+    if (widget.isLoading) return;
+>>>>>>> 433df56c2af04b054ab4899e73a887e23f80d614
     if (_formKey.currentState?.validate() ?? false) {
       widget.onLogin(
         _emailController.text.trim(),

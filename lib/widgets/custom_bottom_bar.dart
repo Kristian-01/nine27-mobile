@@ -40,6 +40,7 @@ class CustomBottomBar extends StatelessWidget {
 
   // Hardcoded navigation items for pharmaceutical e-commerce
   static const List<BottomNavItem> _navItems = [
+<<<<<<< HEAD
   BottomNavItem(
     icon: Icons.home_outlined,
     activeIcon: Icons.home,
@@ -71,6 +72,39 @@ class CustomBottomBar extends StatelessWidget {
     route: '/order-tracking',
   ),
 ];
+=======
+    BottomNavItem(
+      icon: Icons.home_outlined,
+      activeIcon: Icons.home,
+      label: 'Home',
+      route: '/home-screen',
+    ),
+    BottomNavItem(
+      icon: Icons.category_outlined,
+      activeIcon: Icons.category,
+      label: 'Categories',
+      route: '/product-categories',
+    ),
+    BottomNavItem(
+      icon: Icons.person_outline,
+      activeIcon: Icons.person,
+      label: 'Profile',
+      route: '/user-profile',
+    ),
+    BottomNavItem(
+      icon: Icons.shopping_cart_outlined,
+      activeIcon: Icons.shopping_cart,
+      label: 'Cart',
+      route: '/shopping-cart',
+    ),
+    BottomNavItem(
+      icon: Icons.local_shipping_outlined,
+      activeIcon: Icons.local_shipping,
+      label: 'Orders',
+      route: '/order-tracking',
+    ),
+  ];
+>>>>>>> 433df56c2af04b054ab4899e73a887e23f80d614
 
   @override
   Widget build(BuildContext context) {
@@ -141,8 +175,13 @@ class CustomBottomBar extends StatelessWidget {
           if (onTap != null) {
             onTap!(index);
           } else {
+<<<<<<< HEAD
            if (isSelected) return;
     Navigator.pushReplacementNamed(context, item.route);
+=======
+            if (isSelected) return;
+            Navigator.pushReplacementNamed(context, item.route);
+>>>>>>> 433df56c2af04b054ab4899e73a887e23f80d614
           }
         },
         borderRadius: BorderRadius.circular(12),

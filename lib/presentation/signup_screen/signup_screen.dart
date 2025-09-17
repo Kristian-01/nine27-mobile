@@ -28,8 +28,13 @@ class _SignupScreenState extends State<SignupScreen> {
   bool _isTermsAccepted = false;
   bool _isLoading = false;
   final AuthService _authService = AuthService();
+<<<<<<< HEAD
 
 
+=======
+
+  // Remove mock users; rely on backend uniqueness
+>>>>>>> 433df56c2af04b054ab4899e73a887e23f80d614
 
   @override
   void dispose() {
@@ -57,6 +62,7 @@ class _SignupScreenState extends State<SignupScreen> {
 
     try {
       final res = await _authService.register(
+<<<<<<< HEAD
         name: _fullNameController.text.trim(), 
         email: _emailController.text.trim(), 
         password: _passwordController.text, 
@@ -79,6 +85,30 @@ class _SignupScreenState extends State<SignupScreen> {
         _showErrorMessage(msg);
       }catch (_){
            _showErrorMessage('Registration failed. Please try again.');
+=======
+        name: _fullNameController.text.trim(),
+        email: _emailController.text.trim(),
+        password: _passwordController.text,
+        passwordConfirmation: _confirmPasswordController.text,
+      );
+
+      if (res.statusCode == 201) {
+        _showSuccessMessage('Account created successfully!');
+        await Future.delayed(const Duration(milliseconds: 800));
+        if (mounted) {
+          Navigator.pushNamedAndRemoveUntil(context, AppRoutes.home, (route) => false);
+        }
+      } else {
+        _showErrorMessage('Registration failed.');
+      }
+    } on DioException catch (e) {
+      final msg = e.response?.data is Map && (e.response?.data['message'] is String)
+          ? e.response?.data['message'] as String
+          : 'Registration failed. Please try again.';
+      _showErrorMessage(msg);
+    } catch (_) {
+      _showErrorMessage('Registration failed. Please try again.');
+>>>>>>> 433df56c2af04b054ab4899e73a887e23f80d614
     } finally {
       if (mounted) {
         setState(() => _isLoading = false);
@@ -171,11 +201,22 @@ class _SignupScreenState extends State<SignupScreen> {
         ),
         title: Row(
           mainAxisSize: MainAxisSize.min,
+<<<<<<< HEAD
     children: [
      
       const SizedBox(width: 8),
       Text('Create Account', style: AppTheme.lightTheme.textTheme.titleLarge),
     ],
+=======
+          children: [
+            Image.asset('assets/images/logo.png', width: 24, height: 24),
+            const SizedBox(width: 8),
+            Text(
+              'Create Account',
+              style: AppTheme.lightTheme.textTheme.titleLarge,
+            ),
+          ],
+>>>>>>> 433df56c2af04b054ab4899e73a887e23f80d614
         ),
         centerTitle: true,
       ),

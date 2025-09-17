@@ -34,6 +34,7 @@ class _HomeScreenState extends State<HomeScreen> {
         showCartAction: true,
         cartItemCount: 3,
         titleWidget: Row(
+<<<<<<< HEAD
         mainAxisSize: MainAxisSize.min,
         children: [
         Image.asset('assets/images/logo.png', width: 24, height: 24),
@@ -42,6 +43,16 @@ class _HomeScreenState extends State<HomeScreen> {
     ],
   ),
 ),
+=======
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Image.asset('assets/images/logo.png', width: 24, height: 24),
+            const SizedBox(width: 8),
+            const Text('Nine27-Pharmacy'),
+          ],
+        ),
+      ),
+>>>>>>> 433df56c2af04b054ab4899e73a887e23f80d614
       body: RefreshIndicator(
         key: _refreshIndicatorKey,
         onRefresh: _handleRefresh,
@@ -239,6 +250,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _handleBottomNavigation(int index) {
+<<<<<<< HEAD
   switch (index) {
     case 0:
       // Already on Home screen
@@ -255,6 +267,25 @@ class _HomeScreenState extends State<HomeScreen> {
     case 4:
       Navigator.pushNamed(context, '/order-tracking');
       break;
+=======
+    switch (index) {
+      case 0:
+        // Already on Home screen
+        break;
+      case 1:
+        Navigator.pushNamed(context, '/product-categories');
+        break;
+      case 2:
+        Navigator.pushNamed(context, '/user-profile');
+        break;
+      case 3:
+        Navigator.pushNamed(context, '/shopping-cart');
+        break;
+      case 4:
+        Navigator.pushNamed(context, '/order-tracking');
+        break;
+    }
+>>>>>>> 433df56c2af04b054ab4899e73a887e23f80d614
   }
 }
 }

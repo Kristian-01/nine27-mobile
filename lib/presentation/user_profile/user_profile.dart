@@ -112,9 +112,15 @@ class _UserProfileState extends State<UserProfile>
         ),
       ),
       bottomNavigationBar: const CustomBottomBar(
+<<<<<<< HEAD
           currentIndex:2,
           cartItemCount: 3,
         ),
+=======
+        currentIndex: 2,
+        cartItemCount: 3,
+      ),
+>>>>>>> 433df56c2af04b054ab4899e73a887e23f80d614
     );
   }
 

@@ -24,15 +24,26 @@ class AuthService {
   Future<Response<dynamic>> login({
     required String email,
     required String password,
+<<<<<<< HEAD
     bool remember = false,
+=======
+>>>>>>> 433df56c2af04b054ab4899e73a887e23f80d614
   }) async {
     return _dio.post(
       '/api/login',
       data: {
         'email': email,
         'password': password,
+<<<<<<< HEAD
         'remember': remember,
       },
     );
   }
 }
+=======
+      },
+    );
+  }
+}
+
+>>>>>>> 433df56c2af04b054ab4899e73a887e23f80d614

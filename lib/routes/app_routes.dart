@@ -8,8 +8,12 @@ import '../presentation/product_categories/product_categories.dart';
 import '../presentation/user_profile/user_profile.dart';
 import '../presentation/login_screen/login_screen.dart';
 import '../presentation/signup_screen/signup_screen.dart';
+<<<<<<< HEAD
 import '../presentation/forgot_password_screen/forgot_password_screen.dart'; 
 
+=======
+import '../presentation/products/products_screen.dart';
+>>>>>>> 433df56c2af04b054ab4899e73a887e23f80d614
 
 class AppRoutes {
   // ✅ Correct type names
@@ -21,6 +25,7 @@ class AppRoutes {
   static const String searchResults = '/search-results';
   static const String shoppingCart = '/shopping-cart';
   static const String home = '/home-screen';
+  static const String products = '/products';
   static const String checkout = '/checkout';
   static const String orderTracking = '/order-tracking';
   static const String productCategories = '/product-categories';
@@ -33,6 +38,7 @@ class AppRoutes {
   signup: (context) => const SignupScreen(),
   forgotPassword: (context) => const ForgotPasswordScreen(), 
   home: (context) => const HomeScreen(),
+  products: (context) => const ProductsScreen(),
   searchResults: (context) => const SearchResults(),
   shoppingCart: (context) => const ShoppingCart(),
   checkout: (context) => const Checkout(),

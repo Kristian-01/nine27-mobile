@@ -45,14 +45,15 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
     final colorScheme = theme.colorScheme;
 
     return AppBar(
-      title: Text(
-        title,
-        style: GoogleFonts.inter(
-          fontSize: 18,
-          fontWeight: FontWeight.w600,
-          color: foregroundColor ?? colorScheme.onSurface,
-        ),
-      ),
+      title: titleWidget ??
+          Text(
+            title,
+            style: GoogleFonts.inter(
+              fontSize: 18,
+              fontWeight: FontWeight.w600,
+              color: foregroundColor ?? colorScheme.onSurface,
+            ),
+          ),
       centerTitle: centerTitle,
       backgroundColor: backgroundColor ?? colorScheme.surface,
       foregroundColor: foregroundColor ?? colorScheme.onSurface,

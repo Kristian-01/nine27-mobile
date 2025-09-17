@@ -8,7 +8,10 @@ import './widgets/login_form_widget.dart';
 import './widgets/signup_prompt_widget.dart';
 import '../../core/auth_service.dart';
 import 'package:dio/dio.dart';
+<<<<<<< HEAD
 
+=======
+>>>>>>> 433df56c2af04b054ab4899e73a887e23f80d614
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({Key? key}) : super(key: key);
@@ -38,9 +41,14 @@ class _LoginScreenState extends State<LoginScreen> {
     try {
       final res = await _authService.login(email: email.trim(), password: password);
 
+<<<<<<< HEAD
         if (res.statusCode == 200){
         HapticFeedback.lightImpact();
 
+=======
+      if (res.statusCode == 200) {
+        HapticFeedback.lightImpact();
+>>>>>>> 433df56c2af04b054ab4899e73a887e23f80d614
         if (mounted) {
           ScaffoldMessenger.of(context).clearSnackBars();
           ScaffoldMessenger.of(context).showSnackBar(
@@ -49,8 +57,12 @@ class _LoginScreenState extends State<LoginScreen> {
               backgroundColor: AppTheme.lightTheme.colorScheme.primary,
               duration: const Duration(seconds: 2),
             ),
+<<<<<<< HEAD
           );   
 
+=======
+          );
+>>>>>>> 433df56c2af04b054ab4899e73a887e23f80d614
           await Future.delayed(const Duration(milliseconds: 500));
           if (mounted) {
             ScaffoldMessenger.of(context).clearSnackBars();
@@ -58,9 +70,12 @@ class _LoginScreenState extends State<LoginScreen> {
           }
         }
         _loginCompleted = true;
+<<<<<<< HEAD
         return;
+=======
+        return; // prevent fallthrough error message
+>>>>>>> 433df56c2af04b054ab4899e73a887e23f80d614
       } else {
-        // Show error for invalid credentials
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -71,21 +86,38 @@ class _LoginScreenState extends State<LoginScreen> {
           );
         }
       }
+<<<<<<< HEAD
     }on DioException catch (e) {
       if (_loginCompleted) return;
       final msg = e.response?.data is Map && (e.response?.data['message'] is String)
       ? e.response?.data['message'] as String
       : 'Login failed. Please check your connection and try again.';
       if (mounted){
+=======
+    } on DioException catch (e) {
+      if (_loginCompleted) return; // ignore errors after successful nav
+      final msg = e.response?.data is Map && (e.response?.data['message'] is String)
+          ? e.response?.data['message'] as String
+          : 'Login failed. Please check your connection and try again.';
+      if (mounted) {
+>>>>>>> 433df56c2af04b054ab4899e73a887e23f80d614
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(msg),
             backgroundColor: AppTheme.lightTheme.colorScheme.error,
             duration: const Duration(seconds: 3),
+<<<<<<< HEAD
           ),);
       }
     } catch (e) {
       if(_loginCompleted) return;
+=======
+          ),
+        );
+      }
+    } catch (e) {
+      if (_loginCompleted) return; // ignore errors after successful nav
+>>>>>>> 433df56c2af04b054ab4899e73a887e23f80d614
       // Handle network or other errors
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
