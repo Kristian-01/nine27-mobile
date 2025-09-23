@@ -1,27 +1,21 @@
+// lib/routes/app_routes.dart - Updated with splash screen
 import 'package:flutter/material.dart';
+import '../presentation/splash_screen/splash_screen.dart';
+import '../presentation/forgot_password_screen/forgot_password_screen.dart';
 import '../presentation/search_results/search_results.dart';
-import '../presentation/shopping_cart/shopping_cart.dart';
-import '../presentation/home_screen/home_screen.dart';
 import '../presentation/checkout/checkout.dart';
-import '../presentation/order_tracking/order_tracking.dart';
-import '../presentation/product_categories/product_categories.dart';
-import '../presentation/user_profile/user_profile.dart';
 import '../presentation/login_screen/login_screen.dart';
 import '../presentation/signup_screen/signup_screen.dart';
-<<<<<<< HEAD
-import '../presentation/forgot_password_screen/forgot_password_screen.dart'; 
-
-=======
 import '../presentation/products/products_screen.dart';
->>>>>>> 433df56c2af04b054ab4899e73a887e23f80d614
+import '../presentation/main_wrapper.dart';
 
 class AppRoutes {
-  // ✅ Correct type names
-  
+  static const String splash = '/';
   static const String login = '/login';
   static const String signup = '/signup';
-  static const String forgotPassword = '/forgot-password'; // Add this line
-  static const String initial = login; // Start at login, change to home if needed
+  static const String forgotPassword = '/forgot-password';
+  static const String initial = splash; // Start with splash screen
+  static const String main = '/main';
   static const String searchResults = '/search-results';
   static const String shoppingCart = '/shopping-cart';
   static const String home = '/home-screen';
@@ -31,22 +25,29 @@ class AppRoutes {
   static const String productCategories = '/product-categories';
   static const String userProfile = '/user-profile';
 
-  // ✅ Route mapping
   static Map<String, WidgetBuilder> routes = {
-   
-  login: (context) => const LoginScreen(),
-  signup: (context) => const SignupScreen(),
-  forgotPassword: (context) => const ForgotPasswordScreen(), 
-  home: (context) => const HomeScreen(),
-  products: (context) => const ProductsScreen(),
-  searchResults: (context) => const SearchResults(),
-  shoppingCart: (context) => const ShoppingCart(),
-  checkout: (context) => const Checkout(),
-  orderTracking: (context) => const OrderTracking(),
-  productCategories: (context) => const ProductCategories(),
-  userProfile: (context) => const UserProfile(),
-
-   '/login-screen': (context) => const LoginScreen(),
-  '/signup-screen': (context) => const SignupScreen(),
-};
+    splash: (context) => const SplashScreen(),
+    login: (context) => const LoginScreen(),
+    signup: (context) => const SignupScreen(),
+    forgotPassword: (context) => const ForgotPasswordScreen(),
+    
+    // Main wrapper for bottom navigation
+    main: (context) => const MainWrapper(),
+    
+    // Individual screens via MainWrapper
+    home: (context) => const MainWrapper(initialIndex: 0),
+    productCategories: (context) => const MainWrapper(initialIndex: 1),
+    userProfile: (context) => const MainWrapper(initialIndex: 2),
+    shoppingCart: (context) => const MainWrapper(initialIndex: 3),
+    orderTracking: (context) => const MainWrapper(initialIndex: 4),
+    
+    // Standalone screens
+    products: (context) => const ProductsScreen(),
+    searchResults: (context) => const SearchResults(),
+    checkout: (context) => const Checkout(),
+    
+    // Legacy routes
+    '/login-screen': (context) => const LoginScreen(),
+    '/signup-screen': (context) => const SignupScreen(),
+  };
 }

@@ -115,7 +115,7 @@ class ProductSectionWidget extends StatelessWidget {
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Text(
-                        '${product["discount"]}% OFF',
+                        '₱{product["discount"]}% OFF',
                         style:
                             AppTheme.lightTheme.textTheme.labelSmall?.copyWith(
                           color: Colors.white,
@@ -202,7 +202,7 @@ class ProductSectionWidget extends StatelessWidget {
                           // Add to cart functionality
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
-                              content: Text('${product["name"]} added to cart'),
+                              content: Text('₱{product["name"]} added to cart'),
                               duration: const Duration(seconds: 2),
                             ),
                           );

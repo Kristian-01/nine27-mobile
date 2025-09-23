@@ -155,10 +155,7 @@ ActionButtonsSection(
           ),
         ),
       ),
-      bottomNavigationBar: const CustomBottomBar(
-        currentIndex: 4,
-        cartItemCount: 3,
-      ),
+      
     );
   }
 

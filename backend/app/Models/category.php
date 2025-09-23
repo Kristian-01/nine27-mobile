@@ -1,5 +1,6 @@
 <?php
 
+// app/Models/Category.php
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -8,17 +9,34 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class Category extends Model
 {
-	use HasFactory;
+    use HasFactory;
 
-	protected $fillable = [
-		'name', 
-		'slug', 
-		'description'
-	];
+    protected $fillable = [
+        'name',
+        'slug',
+        'description',
+        'image_url',
+        'is_active',
+        'sort_order',
+    ];
 
-	public function products() 
-	{
-		return $this->belongsToMany(Product::class, 'product_category')
-		->withTimestamps();
-	}
+    protected $casts = [
+        'is_active' => 'boolean',
+        'sort_order' => 'integer',
+    ];
+
+    public function products(): BelongsToMany
+    {
+        return $this->belongsToMany(Product::class, 'product_categories');
+    }
+
+    public function getRouteKeyName()
+    {
+        return 'slug';
+    }
+
+    public function scopeActive($query)
+    {
+        return $query->where('is_active', true);
+    }
 }

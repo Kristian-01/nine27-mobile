@@ -6,7 +6,7 @@ import '../../core/app_export.dart';
 import '../../widgets/custom_app_bar.dart';
 import '../../widgets/custom_bottom_bar.dart';
 import './widgets/category_card_widget.dart';
-import '../../core/product_service.dart';
+import '../../services/product_service.dart';
 import './widgets/filter_bottom_sheet_widget.dart';
 import './widgets/search_bar_widget.dart';
 
@@ -285,10 +285,7 @@ class _ProductCategoriesState extends State<ProductCategories>
           ],
         ),
       ),
-      bottomNavigationBar: const CustomBottomBar(
-        currentIndex: 1,
-        cartItemCount: 3,
-      ),
+      
     );
   }
 

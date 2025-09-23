@@ -14,9 +14,12 @@ class ShoppingCart extends StatefulWidget {
   State<ShoppingCart> createState() => _ShoppingCartState();
 }
 
-class _ShoppingCartState extends State<ShoppingCart> {
+class _ShoppingCartState extends State<ShoppingCart> with AutomaticKeepAliveClientMixin {
   bool _isLoading = false;
   bool _isRefreshing = false;
+
+  @override
+  bool get wantKeepAlive => true; // Prevent rebuild when switching tabs
 
   // Mock cart data
   List<Map<String, dynamic>> _cartItems = [
@@ -66,6 +69,8 @@ class _ShoppingCartState extends State<ShoppingCart> {
 
   @override
   Widget build(BuildContext context) {
+    super.build(context); // Required for AutomaticKeepAliveClientMixin
+    
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
@@ -73,8 +78,6 @@ class _ShoppingCartState extends State<ShoppingCart> {
       backgroundColor: AppTheme.backgroundLight,
       appBar: _buildAppBar(colorScheme),
       body: _cartItems.isEmpty ? _buildEmptyCart() : _buildCartContent(),
-      bottomNavigationBar:
-          _cartItems.isNotEmpty ? _buildCheckoutSection() : null,
     );
   }
 
@@ -83,14 +86,7 @@ class _ShoppingCartState extends State<ShoppingCart> {
       backgroundColor: colorScheme.surface,
       elevation: 0,
       surfaceTintColor: Colors.transparent,
-      leading: IconButton(
-        icon: CustomIconWidget(
-          iconName: 'arrow_back_ios',
-          color: colorScheme.onSurface,
-          size: 20,
-        ),
-        onPressed: () => Navigator.pop(context),
-      ),
+      automaticallyImplyLeading: false, // Remove back button for main wrapper
       title: Text(
         'Cart',
         style: AppTheme.lightTheme.textTheme.titleLarge?.copyWith(
@@ -131,12 +127,12 @@ class _ShoppingCartState extends State<ShoppingCart> {
   }
 
   Widget _buildCartContent() {
-    return RefreshIndicator(
-      onRefresh: _refreshCart,
-      color: AppTheme.primaryLight,
-      child: Column(
-        children: [
-          Expanded(
+    return Column(
+      children: [
+        Expanded(
+          child: RefreshIndicator(
+            onRefresh: _refreshCart,
+            color: AppTheme.primaryLight,
             child: SingleChildScrollView(
               physics: const AlwaysScrollableScrollPhysics(),
               padding: EdgeInsets.symmetric(horizontal: 4.w, vertical: 2.h),
@@ -145,13 +141,16 @@ class _ShoppingCartState extends State<ShoppingCart> {
                   _buildCartItemsList(),
                   SizedBox(height: 2.h),
                   _buildCartSummary(),
-                  SizedBox(height: 10.h), // Space for bottom button
+                  SizedBox(height: 2.h),
                 ],
               ),
             ),
           ),
-        ],
-      ),
+        ),
+        // Checkout section at bottom
+        if (_cartItems.isNotEmpty) _buildCheckoutSection(),
+        SizedBox(height: 8.h), // Space for bottom navigation
+      ],
     );
   }
 
@@ -187,11 +186,92 @@ class _ShoppingCartState extends State<ShoppingCart> {
   }
 
   Widget _buildCheckoutSection() {
-    return CheckoutButtonWidget(
-      isEnabled: _cartItems.isNotEmpty,
-      onPressed: () {
-        Navigator.pushNamed(context, '/checkout');
-      },
+    final subtotal = _calculateSubtotal();
+    final tax = subtotal * 0.08;
+    final deliveryFee = subtotal > 50 ? 0.0 : 5.99;
+    final total = subtotal + tax + deliveryFee;
+
+    return Container(
+      padding: EdgeInsets.all(4.w),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withAlpha(10),
+            blurRadius: 8,
+            offset: const Offset(0, -2),
+          ),
+        ],
+        border: Border(
+          top: BorderSide(
+            color: AppTheme.borderLight.withValues(alpha: 0.2),
+            width: 1,
+          ),
+        ),
+      ),
+      child: SafeArea(
+        top: false,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'Total',
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.w700,
+                    color: Colors.black87,
+                  ),
+                ),
+                Text(
+                  '\$${total.toStringAsFixed(2)}',
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.w700,
+                    color: AppTheme.primaryLight,
+                  ),
+                ),
+              ],
+            ),
+            SizedBox(height: 2.h),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: _cartItems.isNotEmpty ? () {
+                  Navigator.pushNamed(context, '/checkout');
+                } : null,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppTheme.primaryLight,
+                  foregroundColor: Colors.white,
+                  padding: EdgeInsets.symmetric(vertical: 2.h),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  elevation: 0,
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    CustomIconWidget(
+                      iconName: 'shopping_cart',
+                      color: Colors.white,
+                      size: 20,
+                    ),
+                    SizedBox(width: 2.w),
+                    Text(
+                      'Proceed to Checkout',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -226,6 +306,11 @@ class _ShoppingCartState extends State<ShoppingCart> {
   }
 
   void _updateQuantity(int index, int newQuantity) {
+    if (newQuantity <= 0) {
+      _removeItem(index);
+      return;
+    }
+    
     setState(() {
       _cartItems[index]["quantity"] = newQuantity;
     });

@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:medicart/widgets/custom_app_bar.dart';
 import 'package:sizer/sizer.dart';
 
 import '../../core/app_export.dart';
-import '../../core/product_service.dart';
+import '../../services/product_service.dart';
 
 class ProductsScreen extends StatefulWidget {
   const ProductsScreen({super.key});

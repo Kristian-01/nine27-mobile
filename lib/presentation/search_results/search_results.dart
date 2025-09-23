@@ -578,7 +578,7 @@ class _SearchResultsState extends State<SearchResults> {
       child: Row(
         children: [
           Text(
-            '$count results found',
+            '₱count results found',
             style: AppTheme.lightTheme.textTheme.bodyMedium?.copyWith(
               color: AppTheme.lightTheme.colorScheme.onSurface
                   .withValues(alpha: 0.7),
@@ -586,7 +586,7 @@ class _SearchResultsState extends State<SearchResults> {
           ),
           if (_searchQuery.isNotEmpty) ...[
             Text(
-              ' for "$_searchQuery"',
+              ' for "₱_searchQuery"',
               style: AppTheme.lightTheme.textTheme.bodyMedium?.copyWith(
                 fontWeight: FontWeight.w500,
               ),

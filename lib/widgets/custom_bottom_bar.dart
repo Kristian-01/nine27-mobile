@@ -1,7 +1,7 @@
+// lib/widgets/custom_bottom_bar.dart - UPDATED VERSION
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-/// Navigation item data model for bottom navigation
 class BottomNavItem {
   final IconData icon;
   final IconData? activeIcon;
@@ -16,8 +16,6 @@ class BottomNavItem {
   });
 }
 
-/// Custom bottom navigation bar for pharmaceutical e-commerce application
-/// Implements adaptive navigation with contextual transformations
 class CustomBottomBar extends StatelessWidget {
   final int currentIndex;
   final ValueChanged<int>? onTap;
@@ -38,41 +36,7 @@ class CustomBottomBar extends StatelessWidget {
     this.cartItemCount,
   });
 
-  // Hardcoded navigation items for pharmaceutical e-commerce
   static const List<BottomNavItem> _navItems = [
-<<<<<<< HEAD
-  BottomNavItem(
-    icon: Icons.home_outlined,
-    activeIcon: Icons.home,
-    label: 'Home',
-    route: '/home-screen',
-  ),
-  BottomNavItem(
-    icon: Icons.category_outlined,
-    activeIcon: Icons.category,
-    label: 'Categories',
-    route: '/product-categories',
-  ),
-  BottomNavItem(
-    icon: Icons.person_outline,
-    activeIcon: Icons.person,
-    label: 'Profile',
-    route: '/user-profile',
-  ),
-  BottomNavItem(
-    icon: Icons.shopping_cart_outlined,
-    activeIcon: Icons.shopping_cart,
-    label: 'Cart',
-    route: '/shopping-cart',
-  ),
-  BottomNavItem(
-    icon: Icons.local_shipping_outlined,
-    activeIcon: Icons.local_shipping,
-    label: 'Orders',
-    route: '/order-tracking',
-  ),
-];
-=======
     BottomNavItem(
       icon: Icons.home_outlined,
       activeIcon: Icons.home,
@@ -104,7 +68,6 @@ class CustomBottomBar extends StatelessWidget {
       route: '/order-tracking',
     ),
   ];
->>>>>>> 433df56c2af04b054ab4899e73a887e23f80d614
 
   @override
   Widget build(BuildContext context) {
@@ -172,16 +135,10 @@ class CustomBottomBar extends StatelessWidget {
     return Expanded(
       child: InkWell(
         onTap: () {
+          if (currentIndex == index) return; // Prevent tapping same tab
+          
           if (onTap != null) {
             onTap!(index);
-          } else {
-<<<<<<< HEAD
-           if (isSelected) return;
-    Navigator.pushReplacementNamed(context, item.route);
-=======
-            if (isSelected) return;
-            Navigator.pushReplacementNamed(context, item.route);
->>>>>>> 433df56c2af04b054ab4899e73a887e23f80d614
           }
         },
         borderRadius: BorderRadius.circular(12),
@@ -194,7 +151,7 @@ class CustomBottomBar extends StatelessWidget {
                 clipBehavior: Clip.none,
                 children: [
                   AnimatedContainer(
-                    duration: const Duration(milliseconds: 200),
+                    duration: const Duration(milliseconds: 150),
                     curve: Curves.easeInOut,
                     padding: const EdgeInsets.all(8),
                     decoration: isSelected
@@ -249,7 +206,7 @@ class CustomBottomBar extends StatelessWidget {
               ),
               const SizedBox(height: 4),
               AnimatedDefaultTextStyle(
-                duration: const Duration(milliseconds: 200),
+                duration: const Duration(milliseconds: 150),
                 style: GoogleFonts.inter(
                   fontSize: 12,
                   fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,

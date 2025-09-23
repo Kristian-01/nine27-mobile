@@ -1,5 +1,5 @@
 name: medicart
-description: A new Flutter project.
+description: A comprehensive medical e-commerce Flutter application.
 publish_to: none
 version: 1.0.0+1
 
@@ -9,34 +9,61 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  
+  # UI & Styling
   sizer: ^2.0.15
   flutter_svg: ^2.0.9
   google_fonts: ^6.1.0
+  
+  # Data & Storage
   shared_preferences: ^2.2.2
-  web: ^1.1.1
-  http: ^1.1.0
   cached_network_image: ^3.3.1
-  connectivity_plus: ^6.1.4
+  
+  # Networking
+  http: ^1.1.0
+  flutter_secure_storage: ^9.0.0
   dio: ^5.4.0
+  connectivity_plus: ^6.1.4
+  
+  # Utilities
+  intl: ^0.20.2
   fluttertoast: ^8.2.4
+  
+  # Charts & Visualizations
   fl_chart: ^0.65.0
+  
+  # UI Components
   flutter_slidable: ^4.0.1
   carousel_slider: ^5.1.1
+  
+  # Maps
   google_maps_flutter: ^2.12.3
+  
+  # Web support
+  web: ^1.1.0
   universal_html: ^2.2.4
-  flutter_native_splash: ^2.4.6
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^5.0.0
+  flutter_native_splash: ^2.4.6
 
 flutter:
   uses-material-design: true
+  
   assets:
     - assets/
     - assets/images/
     - assets/images/logo.png
+  
+  # Add fonts if you have custom fonts
+  # fonts:
+  #   - family: CustomFont
+  #     fonts:
+  #       - asset: assets/fonts/CustomFont-Regular.ttf
+  #       - asset: assets/fonts/CustomFont-Bold.ttf
+  #         weight: 700
 
 flutter_native_splash:
   color: "#ffffff"
