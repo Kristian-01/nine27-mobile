@@ -2,76 +2,53 @@ import 'package:flutter/material.dart';
 import 'package:sizer/sizer.dart';
 
 import '../../../core/app_export.dart';
+import '../../../services/product_service.dart';
 
-class CategoryGridWidget extends StatelessWidget {
+class CategoryGridWidget extends StatefulWidget {
   const CategoryGridWidget({super.key});
 
-  final List<Map<String, dynamic>> _categories = const [
-    {
-      "id": 1,
-      "name": "Pain Relief",
-      "icon": "healing",
-      "color": Color(0xFFE3F2FD),
-      "iconColor": Color(0xFF1976D2),
-      "count": "120+ items",
-    },
-    {
-      "id": 2,
-      "name": "Vitamins",
-      "icon": "local_pharmacy",
-      "color": Color(0xFFF3E5F5),
-      "iconColor": Color(0xFF7B1FA2),
-      "count": "85+ items",
-    },
-    {
-      "id": 3,
-      "name": "First Aid",
-      "icon": "medical_services",
-      "color": Color(0xFFE8F5E8),
-      "iconColor": Color(0xFF388E3C),
-      "count": "65+ items",
-    },
-    {
-      "id": 4,
-      "name": "Prescription",
-      "icon": "receipt_long",
-      "color": Color(0xFFFFF3E0),
-      "iconColor": Color(0xFFF57C00),
-      "count": "200+ items",
-    },
-    {
-      "id": 5,
-      "name": "Baby Care",
-      "icon": "child_care",
-      "color": Color(0xFFFCE4EC),
-      "iconColor": Color(0xFFC2185B),
-      "count": "45+ items",
-    },
-    {
-      "id": 6,
-      "name": "Personal Care",
-      "icon": "face",
-      "color": Color(0xFFE0F2F1),
-      "iconColor": Color(0xFF00695C),
-      "count": "90+ items",
-    },
-    {
-      "id": 7,
-      "name": "Diabetes Care",
-      "icon": "monitor_heart",
-      "color": Color(0xFFEDE7F6),
-      "iconColor": Color(0xFF512DA8),
-      "count": "35+ items",
-    },
-    {
-      "id": 8,
-      "name": "Health Devices",
-      "icon": "devices_other",
-      "color": Color(0xFFF1F8E9),
-      "iconColor": Color(0xFF689F38),
-      "count": "25+ items",
-    },
-  ];
+  @override
+  State<CategoryGridWidget> createState() => _CategoryGridWidgetState();
+}
+
+class _CategoryGridWidgetState extends State<CategoryGridWidget> {
+  final ProductService _productService = ProductService();
+  bool _loading = true;
+  List<Map<String, dynamic>> _categories = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    try {
+      final res = await _productService.fetchCategories();
+      // Accepts either {data: [...]} or [...]
+      final raw = res.data;
+      final list = raw is Map<String, dynamic>
+          ? (raw['data'] as List? ?? [])
+          : (raw as List? ?? []);
+      _categories = list
+          .map<Map<String, dynamic>>((c) => {
+                'id': c['id'],
+                'name': c['name']?.toString() ?? 'Unknown',
+                'slug': c['slug']?.toString() ?? '',
+                // Fallback icon/color
+                'icon': 'local_pharmacy',
+                'color': const Color(0xFFE3F2FD),
+                'iconColor': const Color(0xFF1976D2),
+                'count': c['product_count'] != null
+                    ? '${c['product_count']} items'
+                    : '',
+              })
+          .toList();
+    } catch (_) {}
+    setState(() {
+      _loading = false;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -90,8 +67,7 @@ class CategoryGridWidget extends StatelessWidget {
                 ),
               ),
               GestureDetector(
-                onTap: () =>
-                    Navigator.pushNamed(context, '/product-categories'),
+                onTap: () => Navigator.pushNamed(context, '/product-categories'),
                 child: Text(
                   'View All',
                   style: AppTheme.lightTheme.textTheme.bodyMedium?.copyWith(
@@ -103,28 +79,37 @@ class CategoryGridWidget extends StatelessWidget {
             ],
           ),
           SizedBox(height: 3.h),
-          GridView.builder(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 2,
-              crossAxisSpacing: 3.w,
-              mainAxisSpacing: 2.h,
-              childAspectRatio: 1.1,
+          if (_loading)
+            const Center(child: CircularProgressIndicator())
+          else if (_categories.isEmpty)
+            Center(
+              child: Text(
+                'No categories available',
+                style: AppTheme.lightTheme.textTheme.bodyMedium,
+              ),
+            )
+          else
+            GridView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 2,
+                crossAxisSpacing: 3.w,
+                mainAxisSpacing: 2.h,
+                childAspectRatio: 1.1,
+              ),
+              itemCount: _categories.length,
+              itemBuilder: (context, index) {
+                final category = _categories[index];
+                return _buildCategoryCard(context, category);
+              },
             ),
-            itemCount: _categories.length,
-            itemBuilder: (context, index) {
-              final category = _categories[index];
-              return _buildCategoryCard(context, category);
-            },
-          ),
         ],
       ),
     );
   }
 
-  Widget _buildCategoryCard(
-      BuildContext context, Map<String, dynamic> category) {
+  Widget _buildCategoryCard(BuildContext context, Map<String, dynamic> category) {
     return GestureDetector(
       onTap: () => Navigator.pushNamed(context, '/product-categories'),
       child: Container(
@@ -133,8 +118,7 @@ class CategoryGridWidget extends StatelessWidget {
           color: AppTheme.lightTheme.colorScheme.surface,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color:
-                AppTheme.lightTheme.colorScheme.outline.withValues(alpha: 0.1),
+            color: AppTheme.lightTheme.colorScheme.outline.withValues(alpha: 0.1),
             width: 1,
           ),
           boxShadow: [
@@ -171,16 +155,16 @@ class CategoryGridWidget extends StatelessWidget {
               overflow: TextOverflow.ellipsis,
             ),
             SizedBox(height: 0.5.h),
-            Text(
-              category["count"] as String,
-              style: AppTheme.lightTheme.textTheme.bodySmall?.copyWith(
-                color: AppTheme.lightTheme.colorScheme.onSurface
-                    .withValues(alpha: 0.6),
+            if ((category["count"] as String).isNotEmpty)
+              Text(
+                category["count"] as String,
+                style: AppTheme.lightTheme.textTheme.bodySmall?.copyWith(
+                  color: AppTheme.lightTheme.colorScheme.onSurface.withValues(alpha: 0.6),
+                ),
+                textAlign: TextAlign.center,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
-              textAlign: TextAlign.center,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
           ],
         ),
       ),

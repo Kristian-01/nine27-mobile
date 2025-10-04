@@ -1,11 +1,13 @@
 // lib/presentation/main_wrapper.dart
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import '../widgets/custom_bottom_bar.dart';
 import 'home_screen/home_screen.dart';
 import 'product_categories/product_categories.dart';
 import 'user_profile/user_profile.dart';
 import 'shopping_cart/shopping_cart.dart';
 import 'order_tracking/order_tracking.dart';
+import '../services/cart_service.dart';
 
 class MainWrapper extends StatefulWidget {
   final int initialIndex;
@@ -49,7 +51,7 @@ class _MainWrapperState extends State<MainWrapper> {
       setState(() {
         _currentIndex = index;
       });
-      
+
       // Smooth page transition
       _pageController.animateToPage(
         index,
@@ -72,10 +74,15 @@ class _MainWrapperState extends State<MainWrapper> {
           });
         },
       ),
-      bottomNavigationBar: CustomBottomBar(
-        currentIndex: _currentIndex,
-        onTap: _onTabTapped,
-        cartItemCount: 3,
+      bottomNavigationBar: ValueListenableBuilder<int>(
+        valueListenable: CartService().itemCountNotifier,
+        builder: (_, count, __) {
+          return CustomBottomBar(
+            currentIndex: _currentIndex,
+            onTap: _onTabTapped,
+            cartItemCount: count,
+          );
+        },
       ),
     );
   }

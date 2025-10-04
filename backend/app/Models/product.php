@@ -12,36 +12,19 @@ class Product extends Model
 {
     use HasFactory;
 
+    protected $primaryKey = 'product_id';
+
     protected $fillable = [
         'name',
-        'slug',
         'description',
         'price',
-        'compare_price',
         'stock',
-        'sku',
-        'image_url',
-        'images',
-        'specifications',
-        'manufacturer',
-        'expiry_date',
-        'batch_number',
-        'requires_prescription',
-        'is_active',
-        'weight',
-        'unit',
+        'category',
     ];
 
     protected $casts = [
         'price' => 'decimal:2',
-        'compare_price' => 'decimal:2',
         'stock' => 'integer',
-        'images' => 'array',
-        'specifications' => 'array',
-        'expiry_date' => 'date',
-        'requires_prescription' => 'boolean',
-        'is_active' => 'boolean',
-        'weight' => 'decimal:2',
     ];
 
     public function categories(): BelongsToMany

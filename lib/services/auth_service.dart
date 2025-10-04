@@ -1,8 +1,9 @@
-// lib/services/auth_service.dart - ENHANCED VERSION WITH IMPROVED REMEMBER ME
+// lib/services/auth_service.dart - CRASH-SAFE VERSION
 import 'package:dio/dio.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../core/api_client.dart';
+import 'dart:convert';
 
 class AuthService {
   final Dio _dio = ApiClient.instance.dio;
@@ -11,15 +12,26 @@ class AuthService {
   static const String _rememberMeKey = 'remember_me';
   static const String _lastLoginKey = 'last_login_time';
   
-  // Use secure storage for sensitive data
-  final FlutterSecureStorage _secureStorage = const FlutterSecureStorage(
-    aOptions: AndroidOptions(
-      encryptedSharedPreferences: true,
-    ),
-    iOptions: IOSOptions(
-      accessibility: KeychainAccessibility.first_unlock_this_device,
-    ),
-  );
+  // Use secure storage for sensitive data with error handling
+  FlutterSecureStorage? _secureStorage;
+  
+  FlutterSecureStorage get secureStorage {
+    try {
+      _secureStorage ??= const FlutterSecureStorage(
+        aOptions: AndroidOptions(
+          encryptedSharedPreferences: true,
+        ),
+        iOptions: IOSOptions(
+          accessibility: KeychainAccessibility.first_unlock_this_device,
+        ),
+      );
+      return _secureStorage!;
+    } catch (e) {
+      print('SecureStorage initialization error: $e');
+      // Return a basic instance without options if that fails
+      return const FlutterSecureStorage();
+    }
+  }
 
   // Check if user is logged in and should stay logged in
   Future<bool> isUserLoggedIn() async {
@@ -30,150 +42,266 @@ class AuthService {
       
       if (token == null || token.isEmpty) return false;
       
-      // If remember me is enabled, check if login is still valid (within 30 days)
       if (rememberMe && lastLogin != null) {
         final now = DateTime.now();
         final loginTime = DateTime.fromMillisecondsSinceEpoch(lastLogin);
         final daysDifference = now.difference(loginTime).inDays;
-        
-        // Keep user logged in for 30 days if remember me was checked
         return daysDifference <= 30;
       }
       
-      // If remember me is not enabled, check if session is recent (1 day)
       if (lastLogin != null) {
         final now = DateTime.now();
         final loginTime = DateTime.fromMillisecondsSinceEpoch(lastLogin);
         final hoursDifference = now.difference(loginTime).inHours;
-        
-        return hoursDifference <= 24; // 1 day session without remember me
+        return hoursDifference <= 8;
       }
       
       return false;
     } catch (e) {
+      print('isUserLoggedIn error: $e');
       return false;
     }
   }
 
-  // Get stored token
+  // Get stored token with error handling
   Future<String?> getToken() async {
     try {
-      return await _secureStorage.read(key: _tokenKey);
+      final token = await secureStorage.read(key: _tokenKey);
+      if (token != null) return token;
     } catch (e) {
-      // Fallback to regular preferences if secure storage fails
+      print('SecureStorage read error: $e');
+    }
+    
+    // Fallback to regular preferences
+    try {
       final prefs = await SharedPreferences.getInstance();
       return prefs.getString(_tokenKey);
+    } catch (e) {
+      print('SharedPreferences read error: $e');
+      return null;
     }
   }
 
-  // Save token and remember me data
+  // Save token with error handling
   Future<void> _saveToken(String token, {bool rememberMe = false}) async {
     try {
-      await _secureStorage.write(key: _tokenKey, value: token);
+      await secureStorage.write(key: _tokenKey, value: token);
     } catch (e) {
-      // Fallback to regular preferences
+      print('SecureStorage write error: $e');
+    }
+    
+    try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString(_tokenKey, token);
+      await prefs.setBool(_rememberMeKey, rememberMe);
+      await prefs.setInt(_lastLoginKey, DateTime.now().millisecondsSinceEpoch);
+    } catch (e) {
+      print('SharedPreferences write error: $e');
     }
     
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool(_rememberMeKey, rememberMe);
-    await prefs.setInt(_lastLoginKey, DateTime.now().millisecondsSinceEpoch);
-    
-    // Update dio header with new token
-    _dio.options.headers['Authorization'] = 'Bearer $token';
+    try {
+      _dio.options.headers['Authorization'] = 'Bearer $token';
+    } catch (e) {
+      print('Dio header update error: $e');
+    }
   }
 
-  // Get last login time
+  // Get last login time with error handling
   Future<int?> _getLastLoginTime() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getInt(_lastLoginKey);
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      return prefs.getInt(_lastLoginKey);
+    } catch (e) {
+      print('Get last login time error: $e');
+      return null;
+    }
   }
 
-  // Save remember me credentials securely
+  // Save credentials with error handling
   Future<void> _saveCredentials(String email, String password) async {
     try {
-      await _secureStorage.write(key: 'saved_email', value: email);
-      await _secureStorage.write(key: 'saved_password', value: password);
+      await secureStorage.write(key: 'saved_email', value: email);
+      await secureStorage.write(key: 'saved_password', value: password);
     } catch (e) {
-      // If secure storage fails, don't save passwords in regular storage
-      // Only save email in regular preferences
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setString('saved_email', email);
+      print('Save credentials error: $e');
+      try {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('saved_email', email);
+      } catch (e2) {
+        print('Fallback save email error: $e2');
+      }
     }
   }
 
-  // Get saved credentials
+  // Get saved credentials with comprehensive error handling
   Future<Map<String, String?>> getSavedCredentials() async {
-    final rememberMe = await isRememberMeEnabled();
-    
-    if (!rememberMe) {
+    try {
+      final rememberMe = await isRememberMeEnabled();
+      
+      if (!rememberMe) {
+        return {'email': null, 'password': null};
+      }
+      
+      try {
+        final email = await secureStorage.read(key: 'saved_email');
+        final password = await secureStorage.read(key: 'saved_password');
+        return {'email': email, 'password': password};
+      } catch (e) {
+        print('SecureStorage read credentials error: $e');
+        try {
+          final prefs = await SharedPreferences.getInstance();
+          final email = prefs.getString('saved_email');
+          return {'email': email, 'password': null};
+        } catch (e2) {
+          print('Fallback read email error: $e2');
+          return {'email': null, 'password': null};
+        }
+      }
+    } catch (e) {
+      print('getSavedCredentials error: $e');
       return {'email': null, 'password': null};
     }
-    
+  }
+
+  // Check if remember me is enabled with error handling
+  Future<bool> isRememberMeEnabled() async {
     try {
-      final email = await _secureStorage.read(key: 'saved_email');
-      final password = await _secureStorage.read(key: 'saved_password');
-      return {'email': email, 'password': password};
-    } catch (e) {
-      // Fallback - only get email from regular preferences
       final prefs = await SharedPreferences.getInstance();
-      final email = prefs.getString('saved_email');
-      return {'email': email, 'password': null};
+      return prefs.getBool(_rememberMeKey) ?? false;
+    } catch (e) {
+      print('isRememberMeEnabled error: $e');
+      return false;
     }
   }
 
-  // Check if remember me is enabled
-  Future<bool> isRememberMeEnabled() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getBool(_rememberMeKey) ?? false;
-  }
-
-  // Save user data
+  // Save user data with error handling
   Future<void> _saveUserData(Map<String, dynamic> userData) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_userKey, userData.toString());
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(_userKey, json.encode(userData));
+    } catch (e) {
+      print('Save user data error: $e');
+    }
+  }
+  
+  // Get stored user data with error handling
+  Future<Map<String, dynamic>?> getUserData() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final userDataStr = prefs.getString(_userKey);
+      if (userDataStr != null) {
+        return json.decode(userDataStr);
+      }
+    } catch (e) {
+      print('getUserData error: $e');
+    }
+    return null;
   }
 
-  // Clear stored data with option to keep remember me
+  // Clear stored data with error handling
   Future<void> _clearStoredData({bool keepRememberMe = false}) async {
     try {
-      await _secureStorage.delete(key: _tokenKey);
+      await secureStorage.delete(key: _tokenKey);
       if (!keepRememberMe) {
-        await _secureStorage.delete(key: 'saved_email');
-        await _secureStorage.delete(key: 'saved_password');
+        await secureStorage.delete(key: 'saved_email');
+        await secureStorage.delete(key: 'saved_password');
       }
     } catch (e) {
-      // Fallback cleanup
+      print('SecureStorage delete error: $e');
+    }
+    
+    try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.remove(_tokenKey);
+      await prefs.remove(_userKey);
+      await prefs.remove(_lastLoginKey);
+      
       if (!keepRememberMe) {
+        await prefs.remove(_rememberMeKey);
         await prefs.remove('saved_email');
       }
+    } catch (e) {
+      print('SharedPreferences clear error: $e');
     }
     
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove(_userKey);
-    await prefs.remove(_lastLoginKey);
-    
-    if (!keepRememberMe) {
-      await prefs.remove(_rememberMeKey);
+    try {
+      _dio.options.headers.remove('Authorization');
+    } catch (e) {
+      print('Dio header remove error: $e');
     }
-    
-    _dio.options.headers.remove('Authorization');
   }
 
-  // Initialize auth headers if token exists and is valid
+  // Initialize auth with comprehensive error handling
   Future<void> initializeAuth() async {
-    final isLoggedIn = await isUserLoggedIn();
-    if (isLoggedIn) {
+    try {
       final token = await getToken();
-      if (token != null) {
-        _dio.options.headers['Authorization'] = 'Bearer $token';
+      if (token != null && token.isNotEmpty) {
+        final isSessionValid = await isUserLoggedIn();
+        
+        if (isSessionValid) {
+          try {
+            _dio.options.headers['Authorization'] = 'Bearer $token';
+          } catch (e) {
+            print('Initialize auth header error: $e');
+          }
+        } else {
+          await _clearStoredData(keepRememberMe: true);
+        }
       }
-    } else {
-      // Clear invalid session data
-      await _clearStoredData(keepRememberMe: true);
+    } catch (e) {
+      print('initializeAuth error: $e');
+      // Don't throw - just log and continue
+    }
+  }
+
+  // LOGIN METHOD with better error handling
+  Future<AuthResponse> login({
+    required String email,
+    required String password,
+    bool remember = false,
+  }) async {
+    try {
+      final response = await _dio.post('/auth/login', data: {
+        'email': email,
+        'password': password,
+        'remember': remember,
+      });
+
+      if (response.statusCode == 200) {
+        final data = response.data['data'];
+        await _saveToken(data['token'], rememberMe: remember);
+        await _saveUserData(data['user']);
+        
+        if (remember) {
+          await _saveCredentials(email, password);
+        } else {
+          try {
+            await secureStorage.delete(key: 'saved_email');
+            await secureStorage.delete(key: 'saved_password');
+          } catch (e) {
+            print('Clear credentials error: $e');
+          }
+        }
+
+        return AuthResponse(
+          success: true,
+          message: response.data['message'] ?? 'Login successful',
+          data: data,
+        );
+      }
+
+      return AuthResponse(
+        success: false,
+        message: response.data['message'] ?? 'Login failed',
+      );
+    } on DioException catch (e) {
+      return _handleDioError(e);
+    } catch (e) {
+      print('Login error: $e');
+      return AuthResponse(
+        success: false,
+        message: 'An unexpected error occurred. Please try again.',
+      );
     }
   }
 
@@ -194,7 +322,7 @@ class AuthService {
 
       if (response.statusCode == 201) {
         final data = response.data['data'];
-        await _saveToken(data['token'], rememberMe: false); // Don't auto-remember on register
+        await _saveToken(data['token'], rememberMe: false);
         await _saveUserData(data['user']);
 
         return AuthResponse(
@@ -213,60 +341,7 @@ class AuthService {
     } catch (e) {
       return AuthResponse(
         success: false,
-        message: 'An unexpected error occurred: ${e.toString()}',
-      );
-    }
-  }
-
-  // LOGIN METHOD - Enhanced with better remember me
-  Future<AuthResponse> login({
-    required String email,
-    required String password,
-    bool remember = false,
-  }) async {
-    try {
-      final response = await _dio.post('/auth/login', data: {
-        'email': email,
-        'password': password,
-        'remember': remember,
-      });
-
-      if (response.statusCode == 200) {
-        final data = response.data['data'];
-        await _saveToken(data['token'], rememberMe: remember);
-        await _saveUserData(data['user']);
-        
-        // Save credentials only if remember me is enabled
-        if (remember) {
-          await _saveCredentials(email, password);
-        } else {
-          // Clear any previously saved credentials if not remembering
-          try {
-            await _secureStorage.delete(key: 'saved_email');
-            await _secureStorage.delete(key: 'saved_password');
-          } catch (e) {
-            final prefs = await SharedPreferences.getInstance();
-            await prefs.remove('saved_email');
-          }
-        }
-
-        return AuthResponse(
-          success: true,
-          message: response.data['message'] ?? 'Login successful',
-          data: data,
-        );
-      }
-
-      return AuthResponse(
-        success: false,
-        message: response.data['message'] ?? 'Login failed',
-      );
-    } on DioException catch (e) {
-      return _handleDioError(e);
-    } catch (e) {
-      return AuthResponse(
-        success: false,
-        message: 'An unexpected error occurred: ${e.toString()}',
+        message: 'An unexpected error occurred',
       );
     }
   }
@@ -275,23 +350,18 @@ class AuthService {
   Future<AuthResponse> logout({bool clearRememberMe = false}) async {
     try {
       await _dio.post('/auth/logout');
-      await _clearStoredData(keepRememberMe: !clearRememberMe);
-
-      return AuthResponse(
-        success: true,
-        message: 'Logged out successfully',
-      );
-    } on DioException catch (e) {
-      // Clear local data even if server call fails
-      await _clearStoredData(keepRememberMe: !clearRememberMe);
-      return AuthResponse(
-        success: true,
-        message: 'Logged out successfully',
-      );
+    } catch (e) {
+      print('Logout API error: $e');
     }
+    
+    await _clearStoredData(keepRememberMe: !clearRememberMe);
+    return AuthResponse(
+      success: true,
+      message: 'Logged out successfully',
+    );
   }
 
-  // FORGOT PASSWORD METHOD - Enhanced
+  // FORGOT PASSWORD METHOD
   Future<AuthResponse> forgotPassword(String email) async {
     try {
       final response = await _dio.post('/auth/forgot-password', data: {
@@ -301,7 +371,7 @@ class AuthService {
       if (response.statusCode == 200) {
         return AuthResponse(
           success: true,
-          message: response.data['message'] ?? 'Password reset link sent to your email',
+          message: response.data['message'] ?? 'Password reset link sent',
           data: response.data,
         );
       }
@@ -315,7 +385,7 @@ class AuthService {
     } catch (e) {
       return AuthResponse(
         success: false,
-        message: 'Network error. Please check your connection and try again.',
+        message: 'Network error. Please check your connection.',
       );
     }
   }
@@ -338,7 +408,6 @@ class AuthService {
         message: 'Failed to fetch profile',
       );
     } on DioException catch (e) {
-      // If unauthorized, clear stored auth data
       if (e.response?.statusCode == 401) {
         await _clearStoredData(keepRememberMe: true);
       }
@@ -369,7 +438,7 @@ class AuthService {
         await _saveUserData(response.data['data']);
         return AuthResponse(
           success: true,
-          message: response.data['message'] ?? 'Profile updated successfully',
+          message: response.data['message'] ?? 'Profile updated',
           data: response.data['data'],
         );
       }
@@ -384,36 +453,6 @@ class AuthService {
       return AuthResponse(
         success: false,
         message: 'An unexpected error occurred',
-      );
-    }
-  }
-
-  // RESET PASSWORD METHOD
-  Future<AuthResponse> resetPassword({
-    required String token,
-    required String email,
-    required String password,
-    required String passwordConfirmation,
-  }) async {
-    try {
-      final response = await _dio.post('/auth/reset-password', data: {
-        'token': token,
-        'email': email,
-        'password': password,
-        'password_confirmation': passwordConfirmation,
-      });
-
-      return AuthResponse(
-        success: response.statusCode == 200,
-        message: response.data['message'] ?? 'Password reset successfully',
-        data: response.data,
-      );
-    } on DioException catch (e) {
-      return _handleDioError(e);
-    } catch (e) {
-      return AuthResponse(
-        success: false,
-        message: 'An unexpected error occurred: ${e.toString()}',
       );
     }
   }
@@ -442,17 +481,17 @@ class AuthService {
     } else if (e.type == DioExceptionType.connectionTimeout) {
       return AuthResponse(
         success: false,
-        message: 'Connection timeout. Please check your internet connection.',
+        message: 'Connection timeout. Check your internet.',
       );
     } else if (e.type == DioExceptionType.receiveTimeout) {
       return AuthResponse(
         success: false,
-        message: 'Request timeout. Please try again.',
+        message: 'Request timeout. Try again.',
       );
     } else {
       return AuthResponse(
         success: false,
-        message: 'Network error. Please check your connection.',
+        message: 'Network error. Check your connection.',
       );
     }
   }
@@ -460,19 +499,19 @@ class AuthService {
   String _getDefaultErrorMessage(int? statusCode) {
     switch (statusCode) {
       case 400:
-        return 'Bad request. Please check your input.';
+        return 'Bad request. Check your input.';
       case 401:
-        return 'Invalid credentials. Please try again.';
+        return 'Invalid credentials. Try again.';
       case 403:
         return 'Access denied.';
       case 404:
         return 'Service not found.';
       case 422:
-        return 'Validation error. Please check your input.';
+        return 'Validation error. Check your input.';
       case 500:
-        return 'Server error. Please try again later.';
+        return 'Server error. Try again later.';
       default:
-        return 'An error occurred. Please try again.';
+        return 'An error occurred. Try again.';
     }
   }
 }
@@ -492,6 +531,6 @@ class AuthResponse {
 
   @override
   String toString() {
-    return 'AuthResponse(success: $success, message: $message, data: $data, errors: $errors)';
+    return 'AuthResponse(success: $success, message: $message)';
   }
 }

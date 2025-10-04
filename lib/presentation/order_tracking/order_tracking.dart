@@ -3,14 +3,12 @@ import 'package:fluttertoast/fluttertoast.dart';
 import 'package:sizer/sizer.dart';
 
 import '../../widgets/custom_app_bar.dart';
-import '../../widgets/custom_bottom_bar.dart';
 import './widgets/action_buttons_section.dart';
-import './widgets/delivery_info_card.dart';
-import './widgets/gps_tracking_section.dart';
-import './widgets/order_details_section.dart';
 import './widgets/order_history_section.dart';
 import './widgets/order_status_card.dart';
 import './widgets/order_timeline.dart';
+import '../../services/order_service.dart';
+import '../../services/cart_service.dart';
 
 class OrderTracking extends StatefulWidget {
   const OrderTracking({super.key});
@@ -21,105 +19,84 @@ class OrderTracking extends StatefulWidget {
 
 class _OrderTrackingState extends State<OrderTracking> {
   bool _isRefreshing = false;
+  bool _didInit = false;
+  int? _routeOrderId;
 
-  // Mock data for current order
-  final Map<String, dynamic> currentOrder = {
-  };
+  Map<String, dynamic> currentOrder = {};
 
-  // Mock data for order items
-  final List<Map<String, dynamic>> orderItems = [
-    {
-      "id": 1,
-      "name": "Paracetamol 500mg Tablets",
-      "image":
-          "https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?fm=jpg&q=60&w=3000&ixlib=rb-4.0.3",
-      "quantity": 2,
-      "price": "₱12.99",
-      "isPrescription": false,
-    },
-    {
-      "id": 2,
-      "name": "Amoxicillin 250mg Capsules",
-      "image":
-          "https://images.unsplash.com/photo-1559757148-5c350d0d3c56?fm=jpg&q=60&w=3000&ixlib=rb-4.0.3",
-      "quantity": 1,
-      "price": "₱24.50",
-      "isPrescription": true,
-    },
-    {
-      "id": 3,
-      "name": "Vitamin D3 1000 IU Softgels",
-      "image":
-          "https://images.unsplash.com/photo-1550572017-edd951aa8f72?fm=jpg&q=60&w=3000&ixlib=rb-4.0.3",
-      "quantity": 1,
-      "price": "₱18.75",
-      "isPrescription": false,
-    },
-  ];
+  List<Map<String, dynamic>> orderHistory = [];
 
-  // Mock data for order summary
-  final Map<String, dynamic> orderSummary = {
-    "subtotal": "₱56.24",
-    "deliveryFee": "₱5.99",
-    "tax": "₱4.97",
-    "total": "₱67.20",
-  };
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_didInit) {
+      final args = ModalRoute.of(context)?.settings.arguments;
+      if (args is Map && args['orderId'] != null) {
+        final raw = args['orderId'];
+        int? id;
+        if (raw is int) id = raw;
+        else if (raw is String) id = int.tryParse(raw);
+        _routeOrderId = id;
+      }
+      _loadInitial();
+      _didInit = true;
+    }
+  }
 
-  // Mock data for delivery information
-  final Map<String, dynamic> deliveryInfo = {
-    "address": "123 Main Street, Apartment 4B, New York, NY 10001",
-    "contactName": "John Smith",
-    "phoneNumber": "+1 (555) 123-4567",
-    "deliveryInstructions":
-        "Please ring the doorbell twice and leave at the door if no answer.",
-  };
+  Future<void> _loadInitial() async {
+    setState(() {
+      _isRefreshing = true;
+    });
+    try {
+      final service = OrderService();
+      final listResp = await service.getOrders(page: 1);
+      if (listResp.success) {
+        final data = listResp.data;
+        final orders = (data is Map && data['data'] is List) ? data['data'] as List : (data as List? ?? []);
+        orderHistory = orders.map<Map<String, dynamic>>((o) {
+          final m = Map<String, dynamic>.from(o as Map);
+          return {
+            'orderId': m['id']?.toString() ?? 'N/A',
+            'date': m['created_at']?.toString() ?? 'N/A',
+            'status': m['status']?.toString() ?? 'Pending',
+            'total': (m['total'] ?? m['total_amount'] ?? m['subtotal'])?.toString() ?? 'N/A',
+          };
+        }).toList();
 
-  // Mock data for GPS tracking
-  final Map<String, dynamic> trackingData = {
-    "deliveryPersonLat": 40.7589,
-    "deliveryPersonLng": -73.9851,
-    "deliveryLat": 40.7614,
-    "deliveryLng": -73.9776,
-    "estimatedArrival": "25-30 minutes",
-  };
-
-  // Mock data for order history
-  final List<Map<String, dynamic>> orderHistory = [
-    {
-      "orderId": "MED2024089",
-      "date": "Dec 28, 2024",
-      "status": "Delivered",
-      "total": "₱45.30",
-    },
-    {
-      "orderId": "MED2024076",
-      "date": "Dec 15, 2024",
-      "status": "Delivered",
-      "total": "₱32.80",
-    },
-    {
-      "orderId": "MED2024063",
-      "date": "Nov 30, 2024",
-      "status": "Cancelled",
-      "total": "₱28.50",
-    },
-  ];
+        dynamic firstId = _routeOrderId;
+        if (firstId == null && orders.isNotEmpty) {
+          firstId = orders.first['id'];
+        }
+        if (firstId != null) {
+          final id = firstId is int ? firstId : int.tryParse(firstId.toString());
+          if (id != null) {
+            final detailResp = await service.getOrder(id);
+            if (detailResp.success) {
+              currentOrder = Map<String, dynamic>.from(detailResp.data as Map);
+            }
+          }
+        }
+      }
+    } catch (_) {}
+    setState(() {
+      _isRefreshing = false;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final isTrackingAvailable = currentOrder["status"] == "Out for Delivery";
-    final canEditDelivery = currentOrder["status"] == "Pending";
 
     return Scaffold(
       backgroundColor: colorScheme.surface,
-      appBar: const CustomAppBar(
+      appBar: CustomAppBar(
         title: 'Order Tracking',
         showBackButton: true,
         centerTitle: true,
         showCartAction: true,
-        cartItemCount: 3,
+        cartItemCount: CartService().totalItems,
       ),
       body: RefreshIndicator(
         onRefresh: _handleRefresh,
@@ -127,24 +104,22 @@ class _OrderTrackingState extends State<OrderTracking> {
           physics: const AlwaysScrollableScrollPhysics(),
           child: Column(
             children: [
-              // Current Order Status Card
-             // Current Order Status Card
-OrderStatusCard(orderData: currentOrder.isNotEmpty ? currentOrder : {
-  "orderId": "N/A",
-  "orderDate": "N/A",
-  "status": "Pending",
-  "estimatedDelivery": "N/A",
-  "deliveryAddress": "N/A",
-}),
+              OrderStatusCard(orderData: currentOrder.isNotEmpty ? currentOrder : {
+                "orderId": "N/A",
+                "orderDate": "N/A",
+                "status": "Pending",
+                "estimatedDelivery": "N/A",
+                "deliveryAddress": "N/A",
+              }),
 
-// Order Progress Timeline
-OrderTimeline(currentStatus: (currentOrder["status"] ?? "Pending")),
+              // Order Progress Timeline
+              OrderTimeline(currentStatus: (currentOrder["status"] ?? "Pending")),
 
-// Action Buttons Section
-ActionButtonsSection(
-  orderStatus: (currentOrder["status"] ?? "Pending"),
-  deliveryPersonPhone: isTrackingAvailable ? "+1 (555) 987-6543" : null,
-),
+              // Action Buttons Section
+              ActionButtonsSection(
+                orderStatus: (currentOrder["status"] ?? "Pending"),
+                deliveryPersonPhone: isTrackingAvailable ? "+1 (555) 987-6543" : null,
+              ),
 
               // Order History Section
               OrderHistorySection(orderHistory: orderHistory),
@@ -155,7 +130,6 @@ ActionButtonsSection(
           ),
         ),
       ),
-      
     );
   }
 
@@ -163,18 +137,34 @@ ActionButtonsSection(
     setState(() {
       _isRefreshing = true;
     });
+    try {
+      final service = OrderService();
+      final listResp = await service.getOrders(page: 1);
+      if (listResp.success) {
+        final data = listResp.data;
+        final orders = (data is Map && data['data'] is List) ? data['data'] as List : (data as List? ?? []);
+        orderHistory = orders.map<Map<String, dynamic>>((o) {
+          final m = Map<String, dynamic>.from(o as Map);
+          return {
+            'orderId': m['id']?.toString() ?? 'N/A',
+            'date': m['created_at']?.toString() ?? 'N/A',
+            'status': m['status']?.toString() ?? 'Pending',
+            'total': (m['total'] != null) ? '\\${m['total']}' : 'N/A',
+          };
+        }).toList();
 
-    // Simulate API call delay
-    await Future.delayed(const Duration(seconds: 2));
-
+        if (orders.isNotEmpty) {
+          final firstId = orders.first['id'];
+          final detailResp = await service.getOrder(firstId);
+          if (detailResp.success) {
+            currentOrder = Map<String, dynamic>.from(detailResp.data as Map);
+          }
+        }
+      }
+    } catch (_) {}
     setState(() {
       _isRefreshing = false;
     });
-
-    Fluttertoast.showToast(
-      msg: "Order status updated",
-      toastLength: Toast.LENGTH_SHORT,
-      gravity: ToastGravity.BOTTOM,
-    );
+    Fluttertoast.showToast(msg: "Order status updated");
   }
 }

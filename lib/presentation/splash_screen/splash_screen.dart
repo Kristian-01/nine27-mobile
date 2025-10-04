@@ -1,7 +1,9 @@
+import 'dart:async';
+import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:sizer/sizer.dart';
-import '../../core/app_export.dart';
-import '../../services/auth_service.dart';
+import '../../routes/app_routes.dart';
+import '../welcome_screen/welcome_screen.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -11,215 +13,219 @@ class SplashScreen extends StatefulWidget {
 }
 
 class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMixin {
-  late AnimationController _logoController;
-  late AnimationController _textController;
-  late AnimationController _pulseController;
-  
-  late Animation<double> _logoScale;
+  // Animation controllers
+  late AnimationController _controller;
+  late Animation<double> _backgroundAnimation;
   late Animation<double> _logoRotation;
+  late Animation<double> _logoScale;
+  
+  // Text animations
+  late AnimationController _textController;
   late Animation<double> _textFade;
   late Animation<double> _textSlide;
-  late Animation<double> _pulseAnimation;
-
+  
+  // Progress indicator
+  double _progress = 0.0;
+  bool _navigated = false;
+  Timer? _progressTimer;
+  
   @override
   void initState() {
     super.initState();
-    _initializeAnimations();
-    _startAnimationSequence();
-    _checkAuthStatus();
-  }
-
-  void _initializeAnimations() {
-    // Logo animations
-    _logoController = AnimationController(
-      duration: const Duration(milliseconds: 1800),
-      vsync: this,
-    );
-
-    // Text animations  
-    _textController = AnimationController(
-      duration: const Duration(milliseconds: 1200),
-      vsync: this,
-    );
-
-    // Pulse animation for logo
-    _pulseController = AnimationController(
+    
+    // Initialize main animation controller
+    _controller = AnimationController(
       duration: const Duration(milliseconds: 2000),
       vsync: this,
     );
-
-    // Logo scale animation
-    _logoScale = Tween<double>(
-      begin: 0.3,
+    
+    // Background pulse animation
+    _backgroundAnimation = Tween<double>(
+      begin: 0.0,
       end: 1.0,
-    ).animate(CurvedAnimation(
-      parent: _logoController,
-      curve: Curves.elasticOut,
-    ));
-
+    ).animate(
+      CurvedAnimation(
+        parent: _controller,
+        curve: Curves.easeInOut,
+      ),
+    );
+    
     // Logo rotation animation
     _logoRotation = Tween<double>(
       begin: 0.0,
+      end: 2 * pi,
+    ).animate(
+      CurvedAnimation(
+        parent: _controller,
+        curve: Curves.easeInOutBack,
+      ),
+    );
+    
+    // Logo scale animation
+    _logoScale = Tween<double>(
+      begin: 0.0,
       end: 1.0,
-    ).animate(CurvedAnimation(
-      parent: _logoController,
-      curve: const Interval(0.0, 0.7, curve: Curves.easeInOut),
-    ));
-
+    ).animate(
+      CurvedAnimation(
+        parent: _controller,
+        curve: Curves.elasticOut,
+      ),
+    );
+    
+    // Text animation controller
+    _textController = AnimationController(
+      duration: const Duration(milliseconds: 1000),
+      vsync: this,
+    );
+    
     // Text fade animation
     _textFade = Tween<double>(
       begin: 0.0,
       end: 1.0,
-    ).animate(CurvedAnimation(
-      parent: _textController,
-      curve: Curves.easeInOut,
-    ));
-
+    ).animate(
+      CurvedAnimation(
+        parent: _textController,
+        curve: Curves.easeIn,
+      ),
+    );
+    
     // Text slide animation
     _textSlide = Tween<double>(
-      begin: 30.0,
+      begin: 50.0,
       end: 0.0,
-    ).animate(CurvedAnimation(
-      parent: _textController,
-      curve: Curves.easeOutCubic,
-    ));
-
-    // Pulse animation
-    _pulseAnimation = Tween<double>(
-      begin: 1.0,
-      end: 1.1,
-    ).animate(CurvedAnimation(
-      parent: _pulseController,
-      curve: Curves.easeInOut,
-    ));
-  }
-
-  void _startAnimationSequence() {
-    // Start logo animation
-    _logoController.forward();
+    ).animate(
+      CurvedAnimation(
+        parent: _textController,
+        curve: Curves.easeOutQuad,
+      ),
+    );
     
-    // Start text animation after delay
-    Future.delayed(const Duration(milliseconds: 600), () {
+    // Start animations
+    _controller.forward();
+    
+    // Delay text animation
+    Future.delayed(const Duration(milliseconds: 500), () {
       if (mounted) {
         _textController.forward();
       }
     });
-
-    // Start pulse animation after logo animation
-    Future.delayed(const Duration(milliseconds: 1800), () {
-      if (mounted) {
-        _pulseController.repeat(reverse: true);
+    
+    // Smooth progress animation
+    _startProgressAnimation();
+    
+    // Navigate after delay
+    _scheduleNavigation();
+  }
+  
+  void _startProgressAnimation() {
+    _progressTimer = Timer.periodic(const Duration(milliseconds: 20), (timer) {
+      if (!mounted) {
+        timer.cancel();
+        return;
       }
+      
+      setState(() {
+        _progress += 0.01;
+        if (_progress >= 1.0) {
+          _progress = 1.0;
+          timer.cancel();
+        }
+      });
     });
   }
-
-  Future<void> _checkAuthStatus() async {
-    // Show splash for at least 3 seconds for better UX
-    await Future.delayed(const Duration(seconds: 3));
+  
+  void _scheduleNavigation() {
+    Future.delayed(const Duration(milliseconds: 2500), () {
+      if (!mounted || _navigated) return;
+      _navigateToNextScreen();
+    });
+  }
+  
+  void _navigateToNextScreen() {
+    if (_navigated || !mounted) return;
     
-    try {
-      final authService = AuthService();
-      await authService.initializeAuth();
-      
-      final token = await authService.getToken();
-      final isRememberMeEnabled = await authService.isRememberMeEnabled();
-      
-      if (token != null && token.isNotEmpty && isRememberMeEnabled) {
-        // Token exists and remember me is enabled, verify it's still valid
-        final response = await authService.getProfile();
-        
-        if (response.success) {
-          // Valid token, user is logged in
-          _navigateToHome();
-        } else {
-          // Invalid token, go to login
-          _navigateToLogin();
-        }
-      } else {
-        // No token or remember me disabled, go to login
-        _navigateToLogin();
-      }
-    } catch (e) {
-      // Error occurred, go to login safely
-      _navigateToLogin();
-    }
+    setState(() {
+      _navigated = true;
+    });
+    
+    // Use pushReplacement instead of pushReplacementNamed for more reliability
+    Navigator.of(context).pushReplacement(
+      MaterialPageRoute(
+        builder: (context) => const WelcomeScreen(),
+      ),
+    );
   }
-
-  void _navigateToHome() {
-    if (mounted) {
-      Navigator.pushReplacementNamed(context, AppRoutes.main);
-    }
-  }
-
-  void _navigateToLogin() {
-    if (mounted) {
-      Navigator.pushReplacementNamed(context, AppRoutes.login);
-    }
-  }
-
+  
   @override
   void dispose() {
-    _logoController.dispose();
+    _progressTimer?.cancel();
+    _controller.dispose();
     _textController.dispose();
-    _pulseController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              const Color(0xFF00E676).withOpacity(0.1),
-              Colors.white,
-              const Color(0xFF00C853).withOpacity(0.1),
-            ],
+      backgroundColor: Colors.white,
+      body: SafeArea(
+        child: Container(
+          width: double.infinity,
+          height: double.infinity,
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [
+                Colors.white,
+                Colors.grey[50]!,
+              ],
+            ),
           ),
-        ),
-        child: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              // Animated Logo
-              AnimatedBuilder(
-                animation: Listenable.merge([_logoController, _pulseController]),
-                builder: (context, child) {
-                  return Transform.scale(
-                    scale: _logoScale.value * _pulseAnimation.value,
-                    child: Transform.rotate(
-                      angle: _logoRotation.value * 0.5,
-                      child: Container(
-                        width: 30.w,
-                        height: 30.w,
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(25),
-                          gradient: LinearGradient(
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                            colors: [
-                              const Color(0xFF00E676),
-                              const Color(0xFF00C853),
-                            ],
-                          ),
-                          boxShadow: [
-                            BoxShadow(
-                              color: const Color(0xFF00C853).withOpacity(0.3),
-                              blurRadius: 20,
-                              offset: const Offset(0, 10),
+              Expanded(
+                flex: 3,
+                child: Center(
+                  child: AnimatedBuilder(
+                    animation: _controller,
+                    builder: (context, child) {
+                      return Transform.scale(
+                        scale: _logoScale.value,
+                        child: Transform.rotate(
+                          angle: _logoRotation.value * 0.5,
+                          child: Container(
+                            width: 30.w,
+                            height: 30.w,
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(25),
+                              gradient: const LinearGradient(
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                                colors: [
+                                  Color(0xFF00E676),
+                                  Color(0xFF00C853),
+                                ],
+                              ),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: const Color(0xFF00C853).withAlpha(77),
+                                  blurRadius: 20,
+                                  offset: const Offset(0, 10),
+                                  spreadRadius: 2 + _backgroundAnimation.value * 3,
+                                ),
+                              ],
                             ),
-                          ],
+                            child: const Center(
+                              child: Nine27Logo(),
+                            ),
+                          ),
                         ),
-                        child: const Center(
-                          child: Nine27Logo(),
-                        ),
-                      ),
-                    ),
-                  );
-                },
+                      );
+                    },
+                  ),
+                ),
               ),
 
               SizedBox(height: 6.h),
@@ -234,13 +240,21 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
                       opacity: _textFade.value,
                       child: Column(
                         children: [
-                          Text(
-                            'Nine27-Pharmacy',
-                            style: TextStyle(
-                              fontSize: 28.sp,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.grey[800],
-                              letterSpacing: 1.2,
+                          ShaderMask(
+                            shaderCallback: (bounds) => const LinearGradient(
+                              colors: [
+                                Color(0xFF00E676),
+                                Color(0xFF00C853),
+                              ],
+                            ).createShader(bounds),
+                            child: Text(
+                              'Nine27-Pharmacy',
+                              style: TextStyle(
+                                fontSize: 28.sp,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                                letterSpacing: 1.2,
+                              ),
                             ),
                           ),
                           SizedBox(height: 2.h),
@@ -249,9 +263,8 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
                             style: TextStyle(
                               fontSize: 16.sp,
                               color: Colors.grey[600],
-                              fontWeight: FontWeight.w400,
+                              fontWeight: FontWeight.w500,
                             ),
-                            textAlign: TextAlign.center,
                           ),
                         ],
                       ),
@@ -260,39 +273,39 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
                 },
               ),
 
-              SizedBox(height: 10.h),
-
-              // Loading indicator
-              AnimatedBuilder(
-                animation: _textController,
-                builder: (context, child) {
-                  return Opacity(
-                    opacity: _textFade.value,
-                    child: Column(
-                      children: [
-                        SizedBox(
-                          width: 8.w,
-                          height: 8.w,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 3,
+              Expanded(
+                flex: 2,
+                child: Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // Progress indicator
+                      SizedBox(
+                        width: 60.w,
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(10),
+                          child: LinearProgressIndicator(
+                            value: _progress,
+                            backgroundColor: Colors.grey[200],
                             valueColor: const AlwaysStoppedAnimation<Color>(
                               Color(0xFF00C853),
                             ),
+                            minHeight: 1.h,
                           ),
                         ),
-                        SizedBox(height: 2.h),
-                        Text(
-                          'Loading...',
-                          style: TextStyle(
-                            fontSize: 14.sp,
-                            color: Colors.grey[500],
-                            fontWeight: FontWeight.w300,
-                          ),
+                      ),
+                      SizedBox(height: 2.h),
+                      Text(
+                        'Loading...',
+                        style: TextStyle(
+                          fontSize: 14.sp,
+                          color: const Color(0xFF00C853),
+                          fontWeight: FontWeight.w500,
                         ),
-                      ],
-                    ),
-                  );
-                },
+                      ),
+                    ],
+                  ),
+                ),
               ),
             ],
           ),
@@ -331,7 +344,7 @@ class Nine27Logo extends StatelessWidget {
                 border: Border.all(color: Colors.white, width: 3),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.1),
+                    color: Colors.black.withAlpha(26),
                     blurRadius: 4,
                     offset: const Offset(0, 2),
                   ),

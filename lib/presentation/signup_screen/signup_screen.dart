@@ -20,16 +20,13 @@ class _SignupScreenState extends State<SignupScreen> {
   final TextEditingController _fullNameController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
-  final TextEditingController _confirmPasswordController =
-      TextEditingController();
+  final TextEditingController _confirmPasswordController = TextEditingController();
 
   bool _isPasswordVisible = false;
   bool _isConfirmPasswordVisible = false;
   bool _isTermsAccepted = false;
   bool _isLoading = false;
   final AuthService _authService = AuthService();
-
-  // Remove mock users; rely on backend uniqueness
 
   @override
   void dispose() {
@@ -47,8 +44,7 @@ class _SignupScreenState extends State<SignupScreen> {
   Future<void> _handleSignup() async {
     if (!_isFormValid()) {
       if (!_isTermsAccepted) {
-        _showErrorMessage(
-            'Please accept the Terms of Service and Privacy Policy');
+        _showErrorMessage('Please accept the Terms of Service and Privacy Policy');
       }
       return;
     }
@@ -56,31 +52,83 @@ class _SignupScreenState extends State<SignupScreen> {
     setState(() => _isLoading = true);
 
     try {
+      print('=== SIGNUP DEBUG ===');
+      print('Name: ${_fullNameController.text.trim()}');
+      print('Email: ${_emailController.text.trim()}');
+      print('Password length: ${_passwordController.text.length}');
+      print('Passwords match: ${_passwordController.text == _confirmPasswordController.text}');
+      
       final res = await _authService.register(
-
         name: _fullNameController.text.trim(),
         email: _emailController.text.trim(),
         password: _passwordController.text,
         passwordConfirmation: _confirmPasswordController.text,
       );
 
+      print('Response success: ${res.success}');
+      print('Response message: ${res.message}');
+      print('Response data: ${res.data}');
+      print('Response errors: ${res.errors}');
+      print('===================');
+
       if (res.success) {
-  _showSuccessMessage(res.message);
-  await Future.delayed(const Duration(milliseconds: 800));
-  if (mounted) {
-    Navigator.pushNamedAndRemoveUntil(context, AppRoutes.home, (route) => false);
-  }
-} else {
-  _showErrorMessage(res.message);
-}
+        _showSuccessMessage(res.message);
+      } else {
+        // Show detailed error message
+        String errorMsg = res.message;
+        
+        // If there are field-specific errors, show them
+        if (res.errors != null && res.errors!.isNotEmpty) {
+          errorMsg = '';
+          res.errors!.forEach((field, messages) {
+            if (messages is List) {
+              errorMsg += '${field}: ${messages.join(', ')}\n';
+            } else {
+              errorMsg += '${field}: ${messages}\n';
+            }
+          });
+        }
+        
+        _showErrorMessage(errorMsg);
+      }
 
     } on DioException catch (e) {
-      final msg = e.response?.data is Map && (e.response?.data['message'] is String)
-          ? e.response?.data['message'] as String
-          : 'Registration failed. Please try again.';
+      print('=== DIO EXCEPTION ===');
+      print('Type: ${e.type}');
+      print('Status Code: ${e.response?.statusCode}');
+      print('Response Data: ${e.response?.data}');
+      print('Message: ${e.message}');
+      print('====================');
+      
+      String msg = 'Registration failed. Please try again.';
+      
+      if (e.response?.data is Map) {
+        final data = e.response?.data as Map;
+        
+        // Get the message
+        if (data['message'] is String) {
+          msg = data['message'];
+        }
+        
+        // Add field-specific errors
+        if (data['errors'] is Map) {
+          msg += '\n\nDetails:\n';
+          (data['errors'] as Map).forEach((field, errors) {
+            if (errors is List) {
+              msg += '• $field: ${errors.join(', ')}\n';
+            } else {
+              msg += '• $field: $errors\n';
+            }
+          });
+        }
+      }
+      
       _showErrorMessage(msg);
-    } catch (_) {
-      _showErrorMessage('Registration failed. Please try again.');
+    } catch (e) {
+      print('=== GENERAL EXCEPTION ===');
+      print('Error: $e');
+      print('========================');
+      _showErrorMessage('Registration failed: ${e.toString()}');
     } finally {
       if (mounted) {
         setState(() => _isLoading = false);
@@ -92,9 +140,10 @@ class _SignupScreenState extends State<SignupScreen> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
-        backgroundColor: AppTheme.lightTheme.colorScheme.error,
+        backgroundColor: Colors.red[700],
         behavior: SnackBarBehavior.floating,
         margin: EdgeInsets.all(4.w),
+        duration: const Duration(seconds: 5),
       ),
     );
   }
@@ -108,6 +157,16 @@ class _SignupScreenState extends State<SignupScreen> {
         margin: EdgeInsets.all(4.w),
       ),
     );
+    
+    Future.delayed(const Duration(milliseconds: 800), () {
+      if (mounted) {
+        Navigator.pushNamedAndRemoveUntil(
+          context,
+          AppRoutes.onboarding,
+          (route) => false,
+        );
+      }
+    });
   }
 
   void _handleTermsTap() {
@@ -120,7 +179,7 @@ class _SignupScreenState extends State<SignupScreen> {
         ),
         content: SingleChildScrollView(
           child: Text(
-            'Welcome to AuthFlow. By creating an account, you agree to our terms and conditions. This includes responsible use of our services, protection of your account credentials, and compliance with applicable laws.',
+            'Welcome to Nine27-Pharmacy. By creating an account, you agree to our terms and conditions. This includes responsible use of our services, protection of your account credentials, and compliance with applicable laws.',
             style: AppTheme.lightTheme.textTheme.bodyMedium,
           ),
         ),
@@ -174,14 +233,20 @@ class _SignupScreenState extends State<SignupScreen> {
         title: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Image.asset('assets/images/logo.png', width: 24, height: 24),
+            Image.asset(
+              'assets/images/logo.png',
+              width: 24,
+              height: 24,
+              errorBuilder: (context, error, stackTrace) {
+                return Icon(Icons.medication, size: 24);
+              },
+            ),
             const SizedBox(width: 8),
             Text(
               'Create Account',
               style: AppTheme.lightTheme.textTheme.titleLarge,
             ),
           ],
-
         ),
         centerTitle: true,
       ),
@@ -200,18 +265,24 @@ class _SignupScreenState extends State<SignupScreen> {
                       width: 20.w,
                       height: 20.w,
                       fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) {
+                        return Icon(
+                          Icons.medication,
+                          size: 20.w,
+                          color: const Color(0xFF00C853),
+                        );
+                      },
                     ),
                     SizedBox(height: 3.h),
                     Text(
                       'Nine27-Pharmacy',
-                      style: AppTheme.lightTheme.textTheme.headlineMedium
-                          ?.copyWith(
+                      style: AppTheme.lightTheme.textTheme.headlineMedium?.copyWith(
                         fontWeight: FontWeight.w600,
                       ),
                     ),
                     SizedBox(height: 1.h),
                     Text(
-                      'Create your account to get started with secure authentication',
+                      'Create your account to get started',
                       style: AppTheme.lightTheme.textTheme.bodyMedium?.copyWith(
                         color: AppTheme.lightTheme.colorScheme.onSurfaceVariant,
                       ),
@@ -237,8 +308,7 @@ class _SignupScreenState extends State<SignupScreen> {
                   HapticFeedback.lightImpact();
                 },
                 onConfirmPasswordVisibilityToggle: () {
-                  setState(() =>
-                      _isConfirmPasswordVisible = !_isConfirmPasswordVisible);
+                  setState(() => _isConfirmPasswordVisible = !_isConfirmPasswordVisible);
                   HapticFeedback.lightImpact();
                 },
                 onTermsChanged: (value) {
@@ -259,8 +329,7 @@ class _SignupScreenState extends State<SignupScreen> {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: _isFormValid()
                         ? AppTheme.lightTheme.colorScheme.primary
-                        : AppTheme.lightTheme.colorScheme.outline
-                            .withValues(alpha: 0.3),
+                        : AppTheme.lightTheme.colorScheme.outline.withValues(alpha: 0.3),
                     foregroundColor: _isFormValid()
                         ? AppTheme.lightTheme.colorScheme.onPrimary
                         : AppTheme.lightTheme.colorScheme.onSurfaceVariant,
@@ -278,8 +347,7 @@ class _SignupScreenState extends State<SignupScreen> {
                         )
                       : Text(
                           'Create Account',
-                          style: AppTheme.lightTheme.textTheme.labelLarge
-                              ?.copyWith(
+                          style: AppTheme.lightTheme.textTheme.labelLarge?.copyWith(
                             fontWeight: FontWeight.w600,
                           ),
                         ),
@@ -301,13 +369,11 @@ class _SignupScreenState extends State<SignupScreen> {
                     GestureDetector(
                       onTap: () {
                         HapticFeedback.lightImpact();
-                        Navigator.pushReplacementNamed(
-                            context, '/login-screen');
+                        Navigator.pushReplacementNamed(context, AppRoutes.login);
                       },
                       child: Text(
                         'Sign In',
-                        style:
-                            AppTheme.lightTheme.textTheme.bodyMedium?.copyWith(
+                        style: AppTheme.lightTheme.textTheme.bodyMedium?.copyWith(
                           color: AppTheme.lightTheme.colorScheme.primary,
                           fontWeight: FontWeight.w600,
                           decoration: TextDecoration.underline,

@@ -34,10 +34,10 @@ class _OrderTimelineState extends State<OrderTimeline>
       "status": "processing"
     },
     {
-      "title": "Out for Delivery",
+      "title": "Shipped",
       "subtitle": "On the way to your location",
       "icon": "local_shipping",
-      "status": "out for delivery"
+      "status": "shipped"
     },
     {
       "title": "Delivered",
@@ -242,7 +242,7 @@ class _OrderTimelineState extends State<OrderTimeline>
         return 0;
       case 'processing':
         return 1;
-      case 'out for delivery':
+      case 'shipped':
         return 2;
       case 'delivered':
         return 3;

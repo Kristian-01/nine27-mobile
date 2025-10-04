@@ -251,18 +251,22 @@ class _PaymentMethodWidgetState extends State<PaymentMethodWidget> {
                                     ],
                                   ),
                                 ),
-                                Radio<String>(
-                                  value: method['id'] as String,
-                                  groupValue: widget.selectedPaymentMethod,
-                                  onChanged: isComingSoon
-                                      ? null
-                                      : (value) {
-                                          if (value != null) {
-                                            widget
-                                                .onPaymentMethodChanged(value);
-                                          }
-                                        },
-                                  activeColor: AppTheme.lightTheme.primaryColor,
+                                Flexible(
+                                  child: Align(
+                                    alignment: Alignment.centerRight,
+                                    child: Radio<String>(
+                                      value: method['id'] as String,
+                                      groupValue: widget.selectedPaymentMethod,
+                                      onChanged: isComingSoon
+                                          ? null
+                                          : (value) {
+                                              if (value != null) {
+                                                widget.onPaymentMethodChanged(value);
+                                              }
+                                            },
+                                      activeColor: AppTheme.lightTheme.primaryColor,
+                                    ),
+                                  ),
                                 ),
                               ],
                             ),

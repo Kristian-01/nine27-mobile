@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:sizer/sizer.dart';
 
 import '../../../core/app_export.dart';
+import '../../../services/cart_service.dart';
 
 class ProductSectionWidget extends StatelessWidget {
   final String title;
@@ -115,7 +116,7 @@ class ProductSectionWidget extends StatelessWidget {
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Text(
-                        '₱{product["discount"]}% OFF',
+                        '${product["discount"]}% OFF',
                         style:
                             AppTheme.lightTheme.textTheme.labelSmall?.copyWith(
                           color: Colors.white,
@@ -199,11 +200,16 @@ class ProductSectionWidget extends StatelessWidget {
                       ),
                       GestureDetector(
                         onTap: () {
-                          // Add to cart functionality
+                          final double price = _parsePrice(product["price"] as String);
+                          CartService().addToCart({
+                            'id': product['id'],
+                            'name': product['name'],
+                            'price': price,
+                          });
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
-                              content: Text('₱{product["name"]} added to cart'),
-                              duration: const Duration(seconds: 2),
+                              content: Text('${product["name"]} added to cart'),
+                              duration: const Duration(seconds: 1),
                             ),
                           );
                         },
@@ -229,6 +235,11 @@ class ProductSectionWidget extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  double _parsePrice(String s) {
+    final cleaned = s.replaceAll(RegExp(r'[^0-9\.]'), '');
+    return double.tryParse(cleaned) ?? 0.0;
   }
 
   List<Map<String, dynamic>> _getProductsByType(String type) {

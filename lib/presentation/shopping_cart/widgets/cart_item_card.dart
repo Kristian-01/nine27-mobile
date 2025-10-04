@@ -31,7 +31,7 @@ class CartItemCard extends StatelessWidget {
           color: AppTheme.errorLight,
           borderRadius: BorderRadius.circular(12),
         ),
-        child: CustomIconWidget(
+        child: const CustomIconWidget(
           iconName: 'delete',
           color: Colors.white,
           size: 24,
@@ -70,6 +70,7 @@ class CartItemCard extends StatelessWidget {
   }
 
   Widget _buildProductImage() {
+    final img = (item["image"] as String?)?.isNotEmpty == true ? item["image"] as String : null;
     return Container(
       width: 20.w,
       height: 20.w,
@@ -83,7 +84,7 @@ class CartItemCard extends StatelessWidget {
       child: ClipRRect(
         borderRadius: BorderRadius.circular(8),
         child: CustomImageWidget(
-          imageUrl: item["image"] as String,
+          imageUrl: img,
           width: 20.w,
           height: 20.w,
           fit: BoxFit.cover,
@@ -93,6 +94,9 @@ class CartItemCard extends StatelessWidget {
   }
 
   Widget _buildProductDetails(ColorScheme colorScheme) {
+    final name = (item["name"] ?? '') as String;
+    final category = (item["category"] as String?) ?? '';
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -104,7 +108,7 @@ class CartItemCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    item["name"] as String,
+                    name,
                     style: AppTheme.lightTheme.textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.w600,
                       color: colorScheme.onSurface,
@@ -117,12 +121,13 @@ class CartItemCard extends StatelessWidget {
                     _buildPrescriptionBadge(),
                   ],
                   SizedBox(height: 1.h),
-                  Text(
-                    item["category"] as String,
-                    style: AppTheme.lightTheme.textTheme.bodySmall?.copyWith(
-                      color: AppTheme.textSecondaryLight,
+                  if (category.isNotEmpty)
+                    Text(
+                      category,
+                      style: AppTheme.lightTheme.textTheme.bodySmall?.copyWith(
+                        color: AppTheme.textSecondaryLight,
+                      ),
                     ),
-                  ),
                 ],
               ),
             ),
@@ -130,7 +135,7 @@ class CartItemCard extends StatelessWidget {
               onTap: onRemove,
               child: Container(
                 padding: EdgeInsets.all(1.w),
-                child: CustomIconWidget(
+                child: const CustomIconWidget(
                   iconName: 'close',
                   color: AppTheme.textSecondaryLight,
                   size: 18,
@@ -165,7 +170,7 @@ class CartItemCard extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          CustomIconWidget(
+          const CustomIconWidget(
             iconName: 'medical_services',
             color: AppTheme.warningLight,
             size: 12,
@@ -184,6 +189,9 @@ class CartItemCard extends StatelessWidget {
   }
 
   Widget _buildQuantityControls(ColorScheme colorScheme) {
+    final qty = (item["quantity"] as int?) ?? 1;
+    final maxStock = (item["stock"] as int?) ?? 999;
+
     return Container(
       decoration: BoxDecoration(
         border: Border.all(
@@ -197,18 +205,15 @@ class CartItemCard extends StatelessWidget {
         children: [
           GestureDetector(
             onTap: () {
-              final currentQuantity = item["quantity"] as int;
-              if (currentQuantity > 1) {
-                onQuantityChanged(currentQuantity - 1);
+              if (qty > 1) {
+                onQuantityChanged(qty - 1);
               }
             },
             child: Container(
               padding: EdgeInsets.all(2.w),
               child: CustomIconWidget(
                 iconName: 'remove',
-                color: (item["quantity"] as int) > 1
-                    ? colorScheme.primary
-                    : AppTheme.textSecondaryLight,
+                color: qty > 1 ? colorScheme.primary : AppTheme.textSecondaryLight,
                 size: 16,
               ),
             ),
@@ -216,7 +221,7 @@ class CartItemCard extends StatelessWidget {
           Container(
             padding: EdgeInsets.symmetric(horizontal: 3.w, vertical: 2.w),
             child: Text(
-              (item["quantity"] as int).toString(),
+              qty.toString(),
               style: AppTheme.lightTheme.textTheme.titleSmall?.copyWith(
                 fontWeight: FontWeight.w600,
                 color: colorScheme.onSurface,
@@ -225,19 +230,15 @@ class CartItemCard extends StatelessWidget {
           ),
           GestureDetector(
             onTap: () {
-              final currentQuantity = item["quantity"] as int;
-              final maxStock = item["stock"] as int;
-              if (currentQuantity < maxStock) {
-                onQuantityChanged(currentQuantity + 1);
+              if (qty < maxStock) {
+                onQuantityChanged(qty + 1);
               }
             },
             child: Container(
               padding: EdgeInsets.all(2.w),
               child: CustomIconWidget(
                 iconName: 'add',
-                color: (item["quantity"] as int) < (item["stock"] as int)
-                    ? colorScheme.primary
-                    : AppTheme.textSecondaryLight,
+                color: qty < maxStock ? colorScheme.primary : AppTheme.textSecondaryLight,
                 size: 16,
               ),
             ),
@@ -248,8 +249,8 @@ class CartItemCard extends StatelessWidget {
   }
 
   Widget _buildPriceSection(ColorScheme colorScheme) {
-    final unitPrice = item["price"] as double;
-    final quantity = item["quantity"] as int;
+    final unitPrice = (item["price"] as num?)?.toDouble() ?? 0.0;
+    final quantity = (item["quantity"] as int?) ?? 1;
     final totalPrice = unitPrice * quantity;
 
     return Column(

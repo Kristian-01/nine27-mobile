@@ -6,8 +6,10 @@ import './widgets/checkout_progress_widget.dart';
 import './widgets/delivery_info_widget.dart';
 import './widgets/order_summary_widget.dart';
 import './widgets/payment_method_widget.dart';
-import './widgets/prescription_verification_widget.dart';
 import './widgets/terms_conditions_widget.dart';
+import './widgets/prescription_verification_widget.dart';
+import '../../services/order_service.dart';
+import '../../services/cart_service.dart';
 
 class Checkout extends StatefulWidget {
   const Checkout({super.key});
@@ -22,6 +24,7 @@ class _CheckoutState extends State<Checkout> {
   bool _isLoading = false;
   bool _termsAccepted = false;
   String _selectedPaymentMethod = 'cod';
+  Map<String, String> _uploadedPrescriptions = {};
 
   Map<String, String> _deliveryData = {
     'name': '',
@@ -42,49 +45,11 @@ class _CheckoutState extends State<Checkout> {
     'Complete'
   ];
 
-  // Mock cart data
-  final List<Map<String, dynamic>> _cartItems = [
-    {
-      "id": 1,
-      "name": "Paracetamol 500mg Tablets",
-      "price": "₱12.99",
-      "image":
-          "https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=400&h=400&fit=crop",
-      "quantity": 2,
-      "prescription_required": false,
-      "category": "Pain Relief",
-    },
-    {
-      "id": 2,
-      "name": "Amoxicillin 250mg Capsules",
-      "price": "₱24.50",
-      "image":
-          "https://images.unsplash.com/photo-1559757148-5c350d0d3c56?w=400&h=400&fit=crop",
-      "quantity": 1,
-      "prescription_required": true,
-      "category": "Antibiotics",
-    },
-    {
-      "id": 3,
-      "name": "Vitamin D3 1000 IU Tablets",
-      "price": "₱18.75",
-      "image":
-          "https://images.unsplash.com/photo-1550572017-edd951b55104?w=400&h=400&fit=crop",
-      "quantity": 1,
-      "prescription_required": false,
-      "category": "Vitamins",
-    },
-    {
-      "id": 4,
-      "name": "Lisinopril 10mg Tablets",
-      "price": "₱32.00",
-      "image":
-          "https://images.unsplash.com/photo-1587854692152-cbe660dbde88?w=400&h=400&fit=crop",
-      "quantity": 1,
-      "prescription_required": true,
-      "category": "Blood Pressure",
-    },
-  ];
+  List<Map<String, dynamic>> get _cartItems => CartService().cartItems;
+
+  List<Map<String, dynamic>> get _prescriptionItems => _cartItems
+      .where((item) => (item['prescription_required'] as bool?) == true)
+      .toList();
 
   @override
   void dispose() {
@@ -109,7 +74,13 @@ class _CheckoutState extends State<Checkout> {
           _deliveryData['city']!.isNotEmpty &&
           _deliveryData['zip']!.isNotEmpty;
     case 2: // Payment & Terms
-      return _termsAccepted && _selectedPaymentMethod.isNotEmpty;
+      final requiresPrescription = _prescriptionItems.isNotEmpty;
+      final hasAllPrescriptions = !requiresPrescription ||
+          _prescriptionItems.every((item) =>
+              _uploadedPrescriptions.containsKey(item['id'].toString()));
+      return _termsAccepted &&
+          _selectedPaymentMethod.isNotEmpty &&
+          hasAllPrescriptions;
     default:
       return true;
   }
@@ -147,8 +118,16 @@ class _CheckoutState extends State<Checkout> {
         message = 'Please fill in all delivery information fields';
         break;
       case 2:
-        message =
-            'Please accept terms and conditions and select payment method';
+        final requiresPrescription = _prescriptionItems.isNotEmpty;
+        final missingRx = requiresPrescription && !_prescriptionItems.every(
+          (item) => _uploadedPrescriptions.containsKey(item['id'].toString()),
+        );
+        if (missingRx) {
+          message = 'Please upload prescriptions for all required items';
+        } else {
+          message =
+              'Please accept terms and conditions and select payment method';
+        }
         break;
     }
 
@@ -165,14 +144,57 @@ class _CheckoutState extends State<Checkout> {
       _isLoading = true;
     });
 
-    // Simulate order placement
-    await Future.delayed(const Duration(seconds: 3));
+    try {
+      final orderService = OrderService();
 
-    setState(() {
-      _isLoading = false;
-    });
+      final billingAddress = {
+        'name': _deliveryData['name'],
+        'phone': _deliveryData['phone'],
+        'address': _deliveryData['address'],
+        'city': _deliveryData['city'],
+        'postal_code': _deliveryData['zip'],
+      };
+      final shippingAddress = Map<String, dynamic>.from(billingAddress);
 
-    _showOrderConfirmation();
+      // Prepare client-side cart line items (product_id, quantity)
+      final items = _cartItems.map<Map<String, dynamic>>((i) => {
+            'product_id': i['id'],
+            'quantity': i['quantity'],
+          }).toList();
+
+      final response = await orderService.createOrder(
+        billingAddress: billingAddress,
+        shippingAddress: shippingAddress,
+        paymentMethod: _selectedPaymentMethod,
+        items: items,
+      );
+
+      setState(() {
+        _isLoading = false;
+      });
+
+      if (response.success) {
+        CartService().clearCart();
+        _showOrderConfirmation();
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(response.message),
+            backgroundColor: AppTheme.errorLight,
+          ),
+        );
+      }
+    } catch (e) {
+      setState(() {
+        _isLoading = false;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to place order. Please try again.'),
+          backgroundColor: AppTheme.errorLight,
+        ),
+      );
+    }
   }
 
   void _showOrderConfirmation() {
@@ -260,10 +282,12 @@ class _CheckoutState extends State<Checkout> {
           TextButton(
             onPressed: () {
               Navigator.pop(context);
+              // Navigate to tracking and pass orderId so it opens that order
               Navigator.pushNamedAndRemoveUntil(
                 context,
                 '/order-tracking',
                 (route) => false,
+                arguments: {'orderId': orderId},
               );
             },
             child: Text('Track Order'),
@@ -338,6 +362,16 @@ class _CheckoutState extends State<Checkout> {
                    
                   ],
                   if (_currentStep >= 2) ...[
+                    if (_prescriptionItems.isNotEmpty)
+                      PrescriptionVerificationWidget(
+                        prescriptionItems: _prescriptionItems,
+                        uploadedPrescriptions: _uploadedPrescriptions,
+                        onPrescriptionUploaded: (itemId, filePath) {
+                          setState(() {
+                            _uploadedPrescriptions[itemId] = filePath;
+                          });
+                        },
+                      ),
                     PaymentMethodWidget(
                       selectedPaymentMethod: _selectedPaymentMethod,
                       onPaymentMethodChanged: (method) {
@@ -389,7 +423,7 @@ class _CheckoutState extends State<Checkout> {
                           ),
                     ),
                     Text(
-                      '₱${_calculateTotal().toStringAsFixed(2)}',
+                      '\$${_calculateTotal().toStringAsFixed(2)}',
                       style: Theme.of(context).textTheme.titleLarge?.copyWith(
                             fontWeight: FontWeight.w700,
                             color: AppTheme.lightTheme.primaryColor,
@@ -441,8 +475,7 @@ class _CheckoutState extends State<Checkout> {
 
   double _calculateTotal() {
     final subtotal = _cartItems.fold(0.0, (sum, item) {
-      final price =
-          double.tryParse(item['price'].toString().replaceAll('₱', '')) ?? 0.0;
+      final price = (item['price'] as num?)?.toDouble() ?? 0.0;
       final quantity = item['quantity'] as int? ?? 1;
       return sum + (price * quantity);
     });

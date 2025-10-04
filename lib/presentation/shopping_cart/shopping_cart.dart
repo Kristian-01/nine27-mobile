@@ -4,8 +4,8 @@ import 'package:sizer/sizer.dart';
 import '../../core/app_export.dart';
 import './widgets/cart_item_card.dart';
 import './widgets/cart_summary_card.dart';
-import './widgets/checkout_button_widget.dart';
 import './widgets/empty_cart_widget.dart';
+import '../../services/cart_service.dart';
 
 class ShoppingCart extends StatefulWidget {
   const ShoppingCart({super.key});
@@ -15,57 +15,27 @@ class ShoppingCart extends StatefulWidget {
 }
 
 class _ShoppingCartState extends State<ShoppingCart> with AutomaticKeepAliveClientMixin {
-  bool _isLoading = false;
-  bool _isRefreshing = false;
-
   @override
   bool get wantKeepAlive => true; // Prevent rebuild when switching tabs
 
-  // Mock cart data
-  List<Map<String, dynamic>> _cartItems = [
-    {
-      "id": 1,
-      "name": "Paracetamol 500mg",
-      "category": "Pain Relief",
-      "price": 12.99,
-      "quantity": 2,
-      "stock": 50,
-      "image":
-          "https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?fm=jpg&q=60&w=3000&ixlib=rb-4.0.3",
-    },
-    {
-      "id": 2,
-      "name": "Amoxicillin 250mg",
-      "category": "Antibiotics",
-      "price": 24.50,
-      "quantity": 1,
-      "stock": 25,
-      "image":
-          "https://images.unsplash.com/photo-1559757148-5c350d0d3c56?fm=jpg&q=60&w=3000&ixlib=rb-4.0.3",
-    },
-    {
-      "id": 3,
-      "name": "Vitamin D3 1000 IU",
-      "category": "Vitamins & Supplements",
-      "price": 18.75,
-      "quantity": 1,
-      "stock": 100,
-      "image":
-          "https://images.unsplash.com/photo-1550572017-edd951aa8f72?fm=jpg&q=60&w=3000&ixlib=rb-4.0.3",
-    },
-    {
-      "id": 4,
-      "name": "Lisinopril 10mg",
-      "category": "Heart & Blood Pressure",
-      "price": 32.00,
-      "quantity": 1,
-      "stock": 30,
-      "image":
-          "https://images.unsplash.com/photo-1471864190281-a93a3070b6de?fm=jpg&q=60&w=3000&ixlib=rb-4.0.3",
-    },
-  ];
+  List<Map<String, dynamic>> get _cartItems => CartService().cartItems;
 
-  bool _hasUploadedPrescriptions = false;
+  @override
+  void initState() {
+    super.initState();
+    // Rebuild when cart count changes (items added from other tabs)
+    CartService().itemCountNotifier.addListener(_onCartChanged);
+  }
+
+  @override
+  void dispose() {
+    CartService().itemCountNotifier.removeListener(_onCartChanged);
+    super.dispose();
+  }
+
+  void _onCartChanged() {
+    if (mounted) setState(() {});
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -282,9 +252,12 @@ class _ShoppingCartState extends State<ShoppingCart> with AutomaticKeepAliveClie
   }
 
   void _removeItem(int index) {
-    setState(() {
-      _cartItems.removeAt(index);
-    });
+    if (index >= 0 && index < _cartItems.length) {
+      final id = _cartItems[index]['id'] as int;
+      setState(() {
+        CartService().removeFromCart(id);
+      });
+    }
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -311,9 +284,12 @@ class _ShoppingCartState extends State<ShoppingCart> with AutomaticKeepAliveClie
       return;
     }
     
-    setState(() {
-      _cartItems[index]["quantity"] = newQuantity;
-    });
+    if (index >= 0 && index < _cartItems.length) {
+      final id = _cartItems[index]['id'] as int;
+      setState(() {
+        CartService().updateQuantity(id, newQuantity);
+      });
+    }
   }
 
   void _showClearCartDialog() {
@@ -361,7 +337,7 @@ class _ShoppingCartState extends State<ShoppingCart> with AutomaticKeepAliveClie
 
   void _clearCart() {
     setState(() {
-      _cartItems.clear();
+      CartService().clearCart();
     });
 
     ScaffoldMessenger.of(context).showSnackBar(
@@ -377,10 +353,6 @@ class _ShoppingCartState extends State<ShoppingCart> with AutomaticKeepAliveClie
   }
 
   Future<void> _refreshCart() async {
-    setState(() {
-      _isRefreshing = true;
-    });
-
     // Simulate API call to validate stock and pricing
     await Future.delayed(const Duration(seconds: 1));
 
@@ -390,10 +362,6 @@ class _ShoppingCartState extends State<ShoppingCart> with AutomaticKeepAliveClie
         item["stock"] = 0;
       }
     }
-
-    setState(() {
-      _isRefreshing = false;
-    });
 
     // Show stock alerts if any items are out of stock
     final outOfStockItems =

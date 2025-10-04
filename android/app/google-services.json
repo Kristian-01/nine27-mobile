@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "726573479167",
+    "project_id": "nine27pharmacy-e0db6",
+    "storage_bucket": "nine27pharmacy-e0db6.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:726573479167:android:d676a4c16e72191fc308ca",
+        "android_client_info": {
+          "package_name": "com.medicart.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBTJnNsBwVRhP_25eGhiV0BXt81Y4Bp1K4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

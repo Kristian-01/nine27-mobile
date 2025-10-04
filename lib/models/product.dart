@@ -48,17 +48,17 @@ class Product {
     return Product(
       id: json['id'] ?? json['product_id'] ?? json['uuid'],
       name: (json['name'] ?? json['title'] ?? '').toString(),
-      description: json['description']?.toString(),
+      description: json['description']?.toString() ?? '',
       price: parsedPrice,
       imageUrl: image,
       stock: parsedStock,
     );
   }
 
-  /// Convert Product to JSON (for sending to API)
+  /// Convert Product to JSON
   Map<String, dynamic> toJson() {
     return {
-      'id': id,
+      'product_id': id,
       'name': name,
       'description': description,
       'price': price,
@@ -70,3 +70,4 @@ class Product {
   @override
   String toString() => 'Product{id: $id, name: $name, price: $price}';
 }
+

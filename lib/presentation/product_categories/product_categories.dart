@@ -9,6 +9,7 @@ import './widgets/category_card_widget.dart';
 import '../../services/product_service.dart';
 import './widgets/filter_bottom_sheet_widget.dart';
 import './widgets/search_bar_widget.dart';
+import '../../services/cart_service.dart';
 
 class ProductCategories extends StatefulWidget {
   const ProductCategories({super.key});
@@ -73,32 +74,33 @@ class _ProductCategoriesState extends State<ProductCategories>
     _loadCategories();
   }
 
-  Future<void> _loadCategories() async{
-    try{
+  Future<void> _loadCategories() async {
+    try {
       final res = await _productService.fetchCategories();
-      final list = (res.data['data'] as List<dynamic>).cast<Map<String, dynamic>>();
+      final raw = res.data;
+      final list = raw is Map<String, dynamic>
+          ? (raw['data'] as List? ?? [])
+          : (raw as List? ?? []);
       // Map API categories to UI model
       setState(() {
         _categories = list
-        .map((c) => {
-          'id': c['id'],
-          'name': c['name'],
-          'slug':c['slug'],
-          'icon': 'local_pharmacy',
-          'color': AppTheme.lightTheme.colorScheme.primary,
-          'productCount': c['product_count']?? 0,
-          'subcategories':<Map<String, dynamic>>[],
-        })
-        .toList();
-      _loading = false;
+            .map<Map<String, dynamic>>((c) => {
+                  'id': c['id'],
+                  'name': c['name'],
+                  'slug': c['slug'],
+                  'icon': 'local_pharmacy',
+                  'color': AppTheme.lightTheme.colorScheme.primary,
+                  'productCount': c['product_count'] ?? 0,
+                  'subcategories': <Map<String, dynamic>>[],
+                })
+            .toList();
+        _loading = false;
       });
-    }catch (e) {
+    } catch (e) {
       setState(() {
         _loading = false;
       });
     }
-
-
   }
 
 
@@ -207,12 +209,12 @@ class _ProductCategoriesState extends State<ProductCategories>
 
     return Scaffold(
       backgroundColor: colorScheme.surface,
-      appBar: const CustomAppBar(
+      appBar: CustomAppBar(
         title: 'Product Categories',
         showBackButton: false,
         showSearchAction: false,
         showCartAction: true,
-        cartItemCount: 3,
+        cartItemCount: CartService().totalItems,
       ),
       body: SafeArea(
         child: Column(

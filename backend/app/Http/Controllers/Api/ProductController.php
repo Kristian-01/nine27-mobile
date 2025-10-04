@@ -14,23 +14,20 @@ class ProductController extends Controller
     public function index(Request $request): JsonResponse
     {
         try {
-            $query = Product::with('categories')->active();
+            $query = Product::query();
 
             // Search functionality
             if ($request->has('search')) {
                 $search = $request->get('search');
                 $query->where(function($q) use ($search) {
                     $q->where('name', 'like', "%{$search}%")
-                      ->orWhere('description', 'like', "%{$search}%")
-                      ->orWhere('manufacturer', 'like', "%{$search}%");
+                      ->orWhere('description', 'like', "%{$search}%");
                 });
             }
 
             // Category filter
             if ($request->has('category')) {
-                $query->whereHas('categories', function($q) use ($request) {
-                    $q->where('slug', $request->get('category'));
-                });
+                $query->where('category', $request->get('category'));
             }
 
             // Price range filter
@@ -43,12 +40,19 @@ class ProductController extends Controller
 
             // In stock only
             if ($request->boolean('in_stock_only')) {
-                $query->inStock();
+                $query->where('stock', '>', 0);
             }
 
             // Sorting
             $sortBy = $request->get('sort_by', 'created_at');
             $sortOrder = $request->get('sort_order', 'desc');
+            
+            // Validate sort field exists to prevent SQL injection
+            $allowedSortFields = ['product_id', 'name', 'price', 'stock', 'category', 'created_at', 'updated_at'];
+            if (!in_array($sortBy, $allowedSortFields)) {
+                $sortBy = 'created_at';
+            }
+            
             $query->orderBy($sortBy, $sortOrder);
 
             $perPage = $request->get('per_page', 15);
@@ -59,18 +63,23 @@ class ProductController extends Controller
                 'data' => $products,
             ]);
         } catch (\Exception $e) {
+            \Log::error('Failed to fetch products: ' . $e->getMessage(), [
+                'exception' => $e,
+                'request' => $request->all()
+            ]);
+            
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to fetch products',
-                'error' => $e->getMessage(),
+                'error' => config('app.debug') ? $e->getMessage() : 'An error occurred while processing your request',
             ], 500);
         }
     }
 
-    public function show(Product $product): JsonResponse
+    public function show($productId): JsonResponse
     {
         try {
-            $product->load('categories');
+            $product = Product::where('product_id', $productId)->firstOrFail();
             
             return response()->json([
                 'success' => true,
@@ -131,9 +140,7 @@ class ProductController extends Controller
     public function featured(): JsonResponse
     {
         try {
-            $products = Product::with('categories')
-                ->active()
-                ->inStock()
+            $products = Product::where('stock', '>', 0)
                 ->orderBy('created_at', 'desc')
                 ->limit(10)
                 ->get();

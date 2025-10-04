@@ -277,7 +277,7 @@ class _AccountSettingsWidgetState extends State<AccountSettingsWidget> {
           Switch(
             value: value,
             onChanged: onChanged,
-            activeColor: colorScheme.primary,
+            activeThumbColor: colorScheme.primary,
           ),
         ],
       ),

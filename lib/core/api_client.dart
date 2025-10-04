@@ -1,6 +1,9 @@
 // lib/core/api_client.dart - Updated with auth interceptor
 import 'package:dio/dio.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:flutter/foundation.dart';
+import 'retry_interceptor.dart';
 import 'config.dart';
 
 class ApiClient {
@@ -8,12 +11,14 @@ class ApiClient {
   static final ApiClient instance = ApiClient._();
 
   late final Dio dio;
+  final CancelToken _cancelToken = CancelToken();
 
   void initialize() {
     dio = Dio(BaseOptions(
       baseUrl: ApiConfig.baseUrl,
       connectTimeout: const Duration(seconds: 10),
       receiveTimeout: const Duration(seconds: 15),
+      sendTimeout: const Duration(seconds: 10),
       headers: {
         'Accept': 'application/json',
         'Content-Type': 'application/json',
@@ -22,28 +27,54 @@ class ApiClient {
 
     // Add auth interceptor
     dio.interceptors.add(AuthInterceptor());
-    
-    // Add logging in debug mode
-    dio.interceptors.add(LogInterceptor(
-      requestBody: true,
-      responseBody: true,
-      requestHeader: true,
-      responseHeader: false,
-    ));
+
+    // Add retry interceptor for network issues (exponential backoff)
+    dio.interceptors.add(
+      RetryInterceptor(
+        dio: dio,
+        logPrint: (m) => print(m),
+        retries: 3,
+        retryDelays: const [
+          Duration(seconds: 1),
+          Duration(seconds: 2),
+          Duration(seconds: 3),
+        ],
+      ),
+    );
+
+    // Add logging in debug mode only
+    if (kDebugMode) {
+      dio.interceptors.add(LogInterceptor(
+        requestBody: true,
+        responseBody: true,
+        requestHeader: true,
+        responseHeader: false,
+      ));
+    }
+  }
+  
+  // Method to cancel all ongoing requests
+  void cancelRequests() {
+    _cancelToken.cancel('App is closing');
   }
 }
 
 class AuthInterceptor extends Interceptor {
+  final FlutterSecureStorage _secureStorage = const FlutterSecureStorage();
+
   @override
   void onRequest(RequestOptions options, RequestInterceptorHandler handler) async {
     // Add auth token to requests
-    final prefs = await SharedPreferences.getInstance();
-    final token = prefs.getString('auth_token');
-    
-    if (token != null) {
+    String? token = await _secureStorage.read(key: 'auth_token');
+    if (token == null || token.isEmpty) {
+      final prefs = await SharedPreferences.getInstance();
+      token = prefs.getString('auth_token');
+    }
+
+    if (token != null && token.isNotEmpty) {
       options.headers['Authorization'] = 'Bearer $token';
     }
-    
+
     handler.next(options);
   }
 
@@ -55,8 +86,9 @@ class AuthInterceptor extends Interceptor {
       final prefs = await SharedPreferences.getInstance();
       await prefs.remove('auth_token');
       await prefs.remove('user_data');
+      await _secureStorage.delete(key: 'auth_token');
     }
-    
+
     handler.next(err);
   }
 }

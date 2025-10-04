@@ -4,11 +4,15 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use Illuminate\Auth\Events\Registered;
+use Illuminate\Auth\Events\Verified;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\URL;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
 
 class AuthController extends Controller
@@ -35,19 +39,24 @@ class AuthController extends Controller
                 'name' => $request->name,
                 'email' => $request->email,
                 'password' => Hash::make($request->password),
+                'email_verified_at' => now(),
             ]);
+
+            // Send email verification
+            //event(new Registered($user));
 
             $token = $user->createToken('mobile-app')->plainTextToken;
 
             return response()->json([
                 'success' => true,
-                'message' => 'User registered successfully',
+                'message' => 'User registered successfully. Please check your email to verify your account.',
                 'data' => [
                     'user' => $user,
                     'token' => $token,
                 ],
             ], 201);
         } catch (\Exception $e) {
+            Log::error('Registration failed: '.$e->getMessage());
             return response()->json([
                 'success' => false,
                 'message' => 'Registration failed',
@@ -86,6 +95,13 @@ class AuthController extends Controller
                 'message' => 'Account is deactivated',
             ], 403);
         }
+
+//if (!$user->hasVerifiedEmail()) {
+//return response()->json([
+//'success' => false,
+         //       'message' => 'Please verify your email before logging in.',
+          //  ], 403);
+        //}
 
         // Revoke previous tokens if remember is false
         if (!$request->remember) {
@@ -228,5 +244,49 @@ class AuthController extends Controller
                 'message' => 'Failed to update profile',
             ], 500);
         }
+    }
+
+    public function resendVerification(Request $request): JsonResponse
+    {
+        if ($request->user()->hasVerifiedEmail()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Email already verified',
+            ]);
+        }
+
+        $request->user()->sendEmailVerificationNotification();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Verification link sent',
+        ]);
+    }
+
+    public function verifyEmail(Request $request, int $id, string $hash): JsonResponse
+    {
+        $user = User::findOrFail($id);
+
+        if (! hash_equals((string) $hash, sha1($user->getEmailForVerification()))) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Invalid verification link',
+            ], 400);
+        }
+
+        if ($user->hasVerifiedEmail()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Email already verified',
+            ]);
+        }
+
+        $user->markEmailAsVerified();
+        event(new Verified($user));
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Email verified successfully',
+        ]);
     }
 }

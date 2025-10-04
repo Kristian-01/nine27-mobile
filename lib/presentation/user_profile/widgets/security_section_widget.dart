@@ -190,7 +190,7 @@ class _SecuritySectionWidgetState extends State<SecuritySectionWidget> {
               });
               widget.onToggleBiometrics(value);
             },
-            activeColor: colorScheme.primary,
+            activeThumbColor: colorScheme.primary,
           ),
         ],
       ),

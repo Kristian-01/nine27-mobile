@@ -2,15 +2,19 @@ import 'package:flutter/material.dart';
 import 'package:sizer/sizer.dart';
 
 import '../../core/app_export.dart';
-import '../../widgets/custom_bottom_bar.dart';
 import './widgets/account_settings_widget.dart';
+import './widgets/add_edit_address_screen.dart';
 import './widgets/address_management_widget.dart';
+import './widgets/change_password_screen.dart';
+import './widgets/edit_profile_screen.dart';
 import './widgets/health_profile_widget.dart';
 import './widgets/help_support_widget.dart';
 import './widgets/order_history_card_widget.dart';
 import './widgets/personal_info_section_widget.dart';
 import './widgets/profile_header_widget.dart';
 import './widgets/security_section_widget.dart';
+import '../../services/cart_service.dart';
+import '../../services/auth_service.dart';
 
 class UserProfile extends StatefulWidget {
   const UserProfile({super.key});
@@ -23,16 +27,16 @@ class _UserProfileState extends State<UserProfile>
     with TickerProviderStateMixin {
   late TabController _tabController;
   bool _isLoading = false;
-
-  // Mock user data
-  final Map<String, dynamic> _userData = {
-    'name': 'John Doe',
-    'email': 'john.doe@email.com',
-    'phone': '+1 (555) 123-4567',
-    'membershipStatus': 'Premium',
-    'avatar':
-        'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?fm=jpg&q=60&w=3000&ixlib=rb-4.0.3',
-    'emergencyContact': '+1 (555) 987-6543',
+  final AuthService _authService = AuthService();
+  
+  // User data map with defaults that will be replaced with actual data
+  Map<String, dynamic> _userData = {
+    'name': '',
+    'email': '',
+    'phone': '',
+    'membershipStatus': 'Basic',
+    'avatar': null,
+    'emergencyContact': '',
     'addresses': [
       {
         'id': 1,
@@ -76,6 +80,45 @@ class _UserProfileState extends State<UserProfile>
   void initState() {
     super.initState();
     _tabController = TabController(length: 5, vsync: this);
+    _loadUserProfile();
+  }
+  
+  Future<void> _loadUserProfile() async {
+    setState(() {
+      _isLoading = true;
+    });
+    
+    try {
+      // First try to get data from local storage
+      final storedUserData = await _authService.getUserData();
+      
+      if (storedUserData != null) {
+        setState(() {
+          _userData = {
+            ..._userData,
+            ...storedUserData,
+          };
+        });
+      }
+      
+      // Then fetch the latest from the server
+      final profileResponse = await _authService.getProfile();
+      if (profileResponse.success && profileResponse.data != null) {
+        setState(() {
+          _userData = {
+            ..._userData,
+            ...(profileResponse.data ?? {}),
+          };
+        });
+      }
+    } catch (e) {
+      // Handle error silently, we already have default values
+      debugPrint('Error loading profile: $e');
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
+    }
   }
 
   @override
@@ -129,14 +172,17 @@ class _UserProfileState extends State<UserProfile>
       ),
       child: Row(
         children: [
-          IconButton(
-            icon: CustomIconWidget(
-              iconName: 'arrow_back_ios',
-              color: colorScheme.onSurface,
-              size: 20,
-            ),
-            onPressed: () => Navigator.pop(context),
-          ),
+          if (Navigator.canPop(context))
+            IconButton(
+              icon: CustomIconWidget(
+                iconName: 'arrow_back_ios',
+                color: colorScheme.onSurface,
+                size: 20,
+              ),
+              onPressed: () => Navigator.pop(context),
+            )
+          else
+            const SizedBox(width: 48),
           Expanded(
             child: Text(
               'Profile',
@@ -147,13 +193,35 @@ class _UserProfileState extends State<UserProfile>
               textAlign: TextAlign.center,
             ),
           ),
-          IconButton(
-            icon: CustomIconWidget(
-              iconName: 'more_vert',
-              color: colorScheme.onSurface,
-              size: 20,
-            ),
-            onPressed: _showMoreOptions,
+          Stack(
+            children: [
+              IconButton(
+                icon: CustomIconWidget(
+                  iconName: 'shopping_cart',
+                  color: colorScheme.onSurface,
+                  size: 20,
+                ),
+                onPressed: () => Navigator.pushNamed(context, '/shopping-cart'),
+              ),
+              if (CartService().totalItems > 0)
+                Positioned(
+                  right: 6,
+                  top: 6,
+                  child: Container(
+                    padding: const EdgeInsets.all(2),
+                    decoration: BoxDecoration(
+                      color: AppTheme.errorLight,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    constraints: const BoxConstraints(minWidth: 16, minHeight: 16),
+                    child: Text(
+                      CartService().totalItems > 99 ? '99+' : CartService().totalItems.toString(),
+                      style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.w600),
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+                ),
+            ],
           ),
         ],
       ),
@@ -297,6 +365,155 @@ class _UserProfileState extends State<UserProfile>
     );
   }
 
+  Future<void> _showAddressForm({Map<String, dynamic>? initial}) async {
+    final formKey = GlobalKey<FormState>();
+    final labelCtrl = TextEditingController(text: initial?['label']?.toString() ?? '');
+    final addressCtrl = TextEditingController(text: initial?['address']?.toString() ?? '');
+    final cityCtrl = TextEditingController(text: initial?['city']?.toString() ?? '');
+    final stateCtrl = TextEditingController(text: initial?['state']?.toString() ?? '');
+    final zipCtrl = TextEditingController(text: initial?['zipCode']?.toString() ?? '');
+    bool isDefault = (initial?['isDefault'] as bool?) ?? false;
+
+    await showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (ctx) {
+        return Padding(
+          padding: EdgeInsets.only(
+            left: 16,
+            right: 16,
+            top: 16,
+            bottom: MediaQuery.of(ctx).viewInsets.bottom + 16,
+          ),
+          child: StatefulBuilder(
+            builder: (context, setSheetState) {
+              return SingleChildScrollView(
+                child: Form(
+                  key: formKey,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        initial == null ? 'Add Address' : 'Edit Address',
+                        style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w600),
+                      ),
+                      const SizedBox(height: 12),
+                      TextFormField(
+                        controller: labelCtrl,
+                        decoration: const InputDecoration(labelText: 'Label (e.g., Home, Work)'),
+                        validator: (v) => (v == null || v.trim().isEmpty) ? 'Required' : null,
+                      ),
+                      const SizedBox(height: 12),
+                      TextFormField(
+                        controller: addressCtrl,
+                        decoration: const InputDecoration(labelText: 'Address'),
+                        validator: (v) => (v == null || v.trim().isEmpty) ? 'Required' : null,
+                      ),
+                      const SizedBox(height: 12),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: TextFormField(
+                              controller: cityCtrl,
+                              decoration: const InputDecoration(labelText: 'City'),
+                              validator: (v) => (v == null || v.trim().isEmpty) ? 'Required' : null,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: TextFormField(
+                              controller: stateCtrl,
+                              decoration: const InputDecoration(labelText: 'State/Province'),
+                              validator: (v) => (v == null || v.trim().isEmpty) ? 'Required' : null,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      TextFormField(
+                        controller: zipCtrl,
+                        decoration: const InputDecoration(labelText: 'ZIP/Postal Code'),
+                        validator: (v) => (v == null || v.trim().isEmpty) ? 'Required' : null,
+                      ),
+                      const SizedBox(height: 12),
+                      Row(
+                        children: [
+                          Switch(
+                            value: isDefault,
+                            onChanged: (val) => setSheetState(() => isDefault = val),
+                          ),
+                          const SizedBox(width: 8),
+                          const Text('Set as default'),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                      ElevatedButton(
+                        onPressed: () {
+                          if (!formKey.currentState!.validate()) return;
+
+                          setState(() {
+                            if (isDefault) {
+                              for (var a in _userData['addresses']) {
+                                a['isDefault'] = false;
+                              }
+                            }
+                            if (initial == null) {
+                              // new address
+                              int newId = 1;
+                              final addrs = List<Map<String, dynamic>>.from(_userData['addresses']);
+                              if (addrs.isNotEmpty) {
+                                try {
+                                  newId = addrs.map((e) => e['id'] as int).reduce((a, b) => a > b ? a : b) + 1;
+                                } catch (_) {}
+                              }
+                              _userData['addresses'].add({
+                                'id': newId,
+                                'label': labelCtrl.text.trim(),
+                                'address': addressCtrl.text.trim(),
+                                'city': cityCtrl.text.trim(),
+                                'state': stateCtrl.text.trim(),
+                                'zipCode': zipCtrl.text.trim(),
+                                'isDefault': isDefault,
+                              });
+                            } else {
+                              // update existing
+                              final id = initial['id'];
+                              for (var a in _userData['addresses']) {
+                                if (a['id'] == id) {
+                                  a['label'] = labelCtrl.text.trim();
+                                  a['address'] = addressCtrl.text.trim();
+                                  a['city'] = cityCtrl.text.trim();
+                                  a['state'] = stateCtrl.text.trim();
+                                  a['zipCode'] = zipCtrl.text.trim();
+                                  a['isDefault'] = isDefault;
+                                  break;
+                                }
+                              }
+                            }
+                          });
+
+                          Navigator.pop(context);
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Address saved')),
+                          );
+                        },
+                        child: Text(initial == null ? 'Add Address' : 'Save Changes'),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            },
+          ),
+        );
+      },
+    );
+  }
+
   void _showMoreOptions() {
     showModalBottomSheet(
       context: context,
@@ -354,9 +571,21 @@ class _UserProfileState extends State<UserProfile>
   }
 
   void _handleEditProfile() {
-    // Implement profile editing
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Profile editing feature')),
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => EditProfileScreen(
+          userData: _userData,
+          onSave: (updatedData) {
+            setState(() {
+              _userData.addAll(updatedData);
+            });
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Profile updated successfully')),
+            );
+          },
+        ),
+      ),
     );
   }
 
@@ -368,16 +597,58 @@ class _UserProfileState extends State<UserProfile>
   }
 
   void _handleAddAddress() {
-    // Implement add address
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Add address feature')),
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => AddEditAddressScreen(
+          onSave: (newAddress) {
+            setState(() {
+              // If this is set as default, update other addresses
+              if (newAddress['isDefault'] == true) {
+                for (var address in _userData['addresses']) {
+                  address['isDefault'] = false;
+                }
+              }
+              _userData['addresses'].add(newAddress);
+            });
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Address added successfully')),
+            );
+          },
+        ),
+      ),
     );
   }
 
   void _handleEditAddress(Map<String, dynamic> address) {
-    // Implement edit address
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Edit ${address["label"]} address')),
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => AddEditAddressScreen(
+          initialAddress: address,
+          onSave: (updatedAddress) {
+            setState(() {
+              // If this is set as default, update other addresses
+              if (updatedAddress['isDefault'] == true) {
+                for (var addr in _userData['addresses']) {
+                  addr['isDefault'] = false;
+                }
+              }
+              
+              // Find and update the address
+              final index = _userData['addresses'].indexWhere(
+                (addr) => addr['id'] == updatedAddress['id'],
+              );
+              if (index != -1) {
+                _userData['addresses'][index] = updatedAddress;
+              }
+            });
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Address updated successfully')),
+            );
+          },
+        ),
+      ),
     );
   }
 
@@ -426,9 +697,11 @@ class _UserProfileState extends State<UserProfile>
   }
 
   void _handleChangePassword() {
-    // Implement password change
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Password change feature')),
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const ChangePasswordScreen(),
+      ),
     );
   }
 
